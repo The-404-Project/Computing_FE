@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { ChevronDown, FileText, Download } from "lucide-react"
+import { ChevronDown, FileText, Download, Eye, X } from "lucide-react"
 import { colors } from "../design-system"
 
 interface FormData {
@@ -21,12 +21,13 @@ export default function SuratKeterangan() {
     namaMahasiswa: "Budi Setiawan",
     programStudi: "Teknik Informatika",
     tahunAkademik: "2023/2024",
-    jenisSurat: "Surat Keterangan Mahasiswa Aktif",
+    jenisSurat: "Surat Keterangan Aktif Kuliah",
     keterangan: "Untuk keperluan pengajuan beasiswa Prestasi Gemilang 2024",
     nomorRegistrasi: "SK-IF-2024-03-0123",
   })
 
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const statusMahasiswa = "Aktif"
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -37,12 +38,33 @@ export default function SuratKeterangan() {
     }))
   }
 
+  const handlePreview = () => {
+    console.log("Previewing document")
+    // Logic untuk preview dokumen
+  }
+
+  const handleGenerate = () => {
+    console.log("Generating document")
+    setShowSuccessPopup(true)
+    // Logic untuk generate dokumen
+  }
+
   const handleExport = (format: "docx" | "pdf") => {
     console.log(`Exporting as ${format.toUpperCase()}`)
+    setShowSuccessPopup(false)
+    // Logic untuk export dokumen
   }
 
   return (
     <div className="min-h-screen p-6 md:p-8" style={{ backgroundColor: colors.neutral.white }}>
+      <style>
+        {`
+        @keyframes sipena-check-bounce { 0% { transform: scale(0.8) } 50% { transform: scale(1.15) } 100% { transform: scale(1) } }
+        @keyframes sipena-stroke { 0% { stroke-dashoffset: 50 } 100% { stroke-dashoffset: 0 } }
+        .sipena-check-bounce { animation: sipena-check-bounce .5s ease-out; }
+        .sipena-stroke { stroke-dasharray: 50; stroke-dashoffset: 50; animation: sipena-stroke .5s ease-out forwards .15s; }
+        `}
+      </style>
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="pb-6 md:pb-8 border-b-2" style={{ borderColor: colors.primary.main }}>
@@ -160,7 +182,7 @@ export default function SuratKeterangan() {
                 <label className="block text-sm font-medium text-gray-700">Status Mahasiswa</label>
                 <span
                   className="inline-block px-3 py-1 text-sm font-medium rounded-full"
-                  style={{ backgroundColor: `${colors.semantic.success}20`, color: colors.semantic.success }}
+                  style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
                 >
                   {statusMahasiswa}
                 </span>
@@ -256,63 +278,100 @@ export default function SuratKeterangan() {
               />
             </div>
 
-            {/* Grid Nomor Registrasi and Watermark Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nomor Registrasi */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Nomor Registrasi</label>
-                <input
-                  type="text"
-                  name="nomorRegistrasi"
-                  value={formData.nomorRegistrasi}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-100 border-2 border-dashed rounded-lg focus:outline-none focus:ring-2"
-                  style={
-                    {
-                      borderColor: colors.primary.main,
-                      "--tw-ring-color": colors.primary.main,
-                    } as React.CSSProperties
-                  }
-                  readOnly
-                />
-              </div>
-
-              {/* Watermark Preview */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Watermark Preview</label>
-                <div
-                  className="w-full h-24 border-2 rounded-lg flex items-center justify-center"
-                  style={{ borderColor: colors.primary.light, backgroundColor: `${colors.primary.main}08` }}
-                >
-                  <span className="font-semibold text-lg tracking-widest" style={{ color: colors.primary.main }}>
-                    CONFIDENTIAL
-                  </span>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Nomor Registrasi</label>
+              <input
+                type="text"
+                name="nomorRegistrasi"
+                value={formData.nomorRegistrasi}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-gray-100 border-2 border-dashed rounded-lg focus:outline-none focus:ring-2"
+                style={
+                  {
+                    borderColor: colors.primary.main,
+                    "--tw-ring-color": colors.primary.main,
+                  } as React.CSSProperties
+                }
+              />
             </div>
           </div>
 
-          {/* Export Buttons */}
           <div className="flex gap-4 pt-8 justify-end" style={{ borderTop: `2px solid ${colors.primary.main}33` }}>
             <button
-              onClick={() => handleExport("docx")}
+              onClick={handlePreview}
               className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all"
               style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
             >
-              <FileText className="w-4 h-4" />
-              Export DOCX
+              <Eye className="w-4 h-4" />
+              Preview Dokumen
             </button>
             <button
-              onClick={() => handleExport("pdf")}
+              onClick={handleGenerate}
               className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-lg hover:opacity-80 transition-all"
               style={{ backgroundColor: colors.primary.main }}
             >
-              <Download className="w-4 h-4" />
-              Export PDF
+              <FileText className="w-4 h-4" />
+              Generate Dokumen
             </button>
           </div>
         </div>
       </div>
+
+      {showSuccessPopup && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: `${colors.neutral.black}33` }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-6">
+            {/* Close button */}
+            <div className="flex justify-end">
+              <button onClick={() => setShowSuccessPopup(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Success icon and message */}
+            <div className="text-center space-y-4">
+              <div
+                className="w-16 h-16 rounded-full mx-auto flex items-center justify-center sipena-check-bounce"
+                style={{ backgroundColor: `${colors.semantic.success}20` }}
+              >
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: colors.semantic.success }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path className="sipena-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Dokumen Berhasil Dibuat</h3>
+              <p className="text-gray-600 text-sm">Silakan pilih format export yang Anda inginkan</p>
+            </div>
+
+            {/* Export buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleExport("docx")}
+                className="flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all"
+                style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
+              >
+                <FileText className="w-5 h-5" />
+                Export DOCX
+              </button>
+              <button
+                onClick={() => handleExport("pdf")}
+                className="flex items-center justify-center gap-2 px-6 py-3 text-white font-medium rounded-lg hover:opacity-80 transition-all"
+                style={{ backgroundColor: colors.primary.main }}
+              >
+                <Download className="w-5 h-5" />
+                Export PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
