@@ -69,7 +69,7 @@ const SuratUndangan = () => {
         <header className="mb-6 md:mb-8 pb-4 border-b" style={{ borderColor: '#e5e7eb' }}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.primary.dark }}>
+              <h1 className="text-3xl font-bold" style={{ color: colors.primary.main }}>
                 Buat Surat Undangan Baru
               </h1>
               <p className="mt-1 text-sm sm:text-base font-normal" style={{ color: colors.primary.medium }}>
