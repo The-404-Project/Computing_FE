@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { colors } from '../design-system/colors';
 
-const Login = () => {
+interface LoginProps {
+  onLoginSuccess?: () => void;
+  onNavigateToRegister?: () => void;
+}
+
+const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
@@ -10,6 +15,10 @@ const Login = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log({ email, password, role });
+    // Call the callback to notify parent component
+    if (onLoginSuccess) {
+      onLoginSuccess();
+    }
   };
 
   return (
@@ -171,6 +180,16 @@ const Login = () => {
                 Masuk
               </button>
             </form>
+
+            {/* Link to Register */}
+            <div className="text-center mt-4 sm:mt-5 md:mt-6">
+              <p className="text-xs sm:text-sm font-normal" style={{ color: '#6b7280' }}>
+                Belum punya akun?{' '}
+                <button type="button" onClick={onNavigateToRegister} className="font-semibold hover:underline bg-transparent border-none cursor-pointer p-0" style={{ color: colors.primary.main }}>
+                  Buat Akun
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>
