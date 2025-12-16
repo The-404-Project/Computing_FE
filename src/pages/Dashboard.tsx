@@ -2,9 +2,10 @@ import { colors } from '../design-system/colors';
 
 interface DashboardProps {
   onLogout?: () => void;
+  onOpenSuratPengantar?: () => void;
 }
 
-const Dashboard = ({ onLogout }: DashboardProps) => {
+const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.neutral.white }}>
       {/* Header */}
@@ -92,6 +93,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             Aksi Cepat
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            
             <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
               <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -106,7 +108,11 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
               </div>
             </button>
 
-            <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
+            <button 
+                onClick={onOpenSuratPengantar}
+                className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+                style={{ borderColor: '#e5e7eb' }}
+            >
               <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
