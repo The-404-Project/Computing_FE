@@ -3,9 +3,16 @@ import { colors } from '../design-system/colors';
 interface DashboardProps {
   onLogout?: () => void;
   onOpenSuratPengantar?: () => void;
+  onOpenSuratUndangan?: () => void; // Tambahan Modul 2
+  onOpenSuratTugas?: () => void;    // Tambahan Modul 1
 }
 
-const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
+const Dashboard = ({ 
+  onLogout, 
+  onOpenSuratPengantar, 
+  onOpenSuratUndangan, 
+  onOpenSuratTugas 
+}: DashboardProps) => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.neutral.white }}>
       {/* Header */}
@@ -51,9 +58,7 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>
-              0
-            </p>
+            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>0</p>
           </div>
 
           {/* Card 2 */}
@@ -66,9 +71,7 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>
-              0
-            </p>
+            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>0</p>
           </div>
 
           {/* Card 3 */}
@@ -81,9 +84,7 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>
-              0
-            </p>
+            <p className="text-2xl sm:text-3xl font-bold" style={{ color: '#1f2937' }}>0</p>
           </div>
         </div>
 
@@ -93,8 +94,13 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
             Aksi Cepat
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            
-            <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
+
+            {/* TOMBOL MODUL 2: UNDANGAN */}
+            <button 
+              onClick={onOpenSuratUndangan}
+              className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+              style={{ borderColor: '#e5e7eb' }}
+            >
               <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -108,6 +114,7 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
               </div>
             </button>
 
+            {/* TOMBOL MODUL 4: PENGANTAR */}
             <button 
                 onClick={onOpenSuratPengantar}
                 className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
@@ -126,9 +133,29 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar }: DashboardProps) => {
               </div>
             </button>
 
-            <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
+            {/* TOMBOL MODUL 1: SURAT TUGAS (BARU) */}
+            <button 
+              onClick={onOpenSuratTugas}
+              className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+              style={{ borderColor: '#e5e7eb' }}
+            >
               <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <div>
+                <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
+                  Buat Surat Tugas
+                </p>
+                <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+                  Tugas Dosen & SPPD
+                </p>
+              </div>
+            </button>
+
+            {/* TOMBOL VIEW ALL */}
+            <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
+              <svg className="w-6 h-6 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
               <div>
                 <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>

@@ -231,7 +231,7 @@ const SuratPengantarPermohonan = () => {
     formData.tujuanSurat === 'pengantar_penelitian';
 
   return (
-    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8" style={{ backgroundColor: colors.neutral.white }}>
+    <div className="w-full p-4 sm:p-6 lg:p-8" style={{ backgroundColor: colors.neutral.white }}>
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
