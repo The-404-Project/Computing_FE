@@ -3,21 +3,20 @@ import { useState, type ChangeEvent } from 'react';
 // --- Interface ---
 interface FormData {
   jenis_surat: string;
-  nomorSurat: string; // Hidden/Auto
+  nomorSurat: string;
   lampiran: string;
-  perihal: string;    // Default: Undangan
-  lokasi: string;     // Sesuai Figma
+  perihal: string;
+  lokasi: string;
   tanggalAcara: string;
   waktuAcara: string;
   agenda: string;
 }
 
 const SuratUndangan = () => {
-  // --- State ---
   const [formData, setFormData] = useState<FormData>({
     jenis_surat: 'undangan_rapat',
-    nomorSurat: '', 
-    lampiran: '-', 
+    nomorSurat: '',
+    lampiran: '-',
     perihal: 'Undangan',
     lokasi: '',
     tanggalAcara: '',
@@ -25,17 +24,16 @@ const SuratUndangan = () => {
     agenda: ''
   });
 
-  // State khusus untuk List Undangan (Sesuai Figma)
   const [inputRecipient, setInputRecipient] = useState('');
   const [recipients, setRecipients] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // State untuk melacak format mana yang sedang loading
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | null>(null);
 
-  // --- Handlers ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Fitur Tambah Penerima ke List
   const addRecipient = () => {
     if (inputRecipient.trim()) {
       setRecipients([...recipients, inputRecipient]);
@@ -43,15 +41,11 @@ const SuratUndangan = () => {
     }
   };
 
-  // Hapus Penerima
   const removeRecipient = (index: number) => {
-    const newRecipients = [...recipients];
-    newRecipients.splice(index, 1);
-    setRecipients(newRecipients);
+    setRecipients(recipients.filter((_, i) => i !== index));
   };
 
   const handleExport = async (format: 'docx' | 'pdf') => {
-    // Validasi
     if (recipients.length === 0) {
       alert("Harap masukkan setidaknya satu nama di Daftar Undangan!");
       return;
@@ -62,27 +56,19 @@ const SuratUndangan = () => {
     }
 
     try {
-      setIsLoading(true);
+      setLoadingFormat(format);
 
-      // GABUNGKAN DATA PENERIMA (Solusi sementara agar Backend Modul 2 yg skrg tetap jalan)
-      // Backend menerima string 'kepada'. Kita kirim gabungan nama.
-      // Nanti kalau fitur Bulk aktif, kita bisa loop di sini.
       const kepadaGabungan = recipients.join(', ');
-
-      // Mapping data Form ke Payload Backend
-      // Backend mengharapkan field: { tempat, waktuMulai, waktuSelesai ... }
-      // Kita sesuaikan dari UI Figma (Lokasi -> tempat, Waktu -> waktuMulai)
       const payload = {
         ...formData,
-        kepada: kepadaGabungan, 
+        kepada: kepadaGabungan,
         tempat: formData.lokasi,
-        waktuMulai: formData.waktuAcara, 
-        waktuSelesai: '', // Default kosong dulu
-        nomorSurat: ''    // Auto generate di backend
+        waktuMulai: formData.waktuAcara,
+        waktuSelesai: '',
+        nomorSurat: ''
       };
 
-      const endpoint = `http://localhost:4000/api/surat-undangan/create?format=${format}`;
-
+      const endpoint = `http://localhost:3000/api/surat-undangan/create?format=${format}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,174 +90,167 @@ const SuratUndangan = () => {
     } catch (error: any) {
       alert(`Gagal: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setLoadingFormat(null);
     }
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 p-6 md:p-10 font-sans text-gray-800">
-      <div className="max-w-6xl mx-auto">
+    <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
+      <div className="max-w-5xl mx-auto">
         
-        {/* HEADER SECTION (Sesuai Figma) */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        {/* HEADER SECTION */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Buat Surat Undangan Baru</h1>
-            <p className="text-gray-500 mt-1">Isi detail di bawah untuk membuat dan mengekspor surat undangan.</p>
+            <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Buat Surat Undangan</h1>
+            <p className="text-[#8C7A6B] mt-2 text-lg">Input detail acara untuk pembuatan dokumen otomatis.</p>
           </div>
           
-          {/* Action Buttons */}
           <div className="flex gap-3">
-             {/* Tombol Simpan Draft (Visual Only) */}
-            <button className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded hover:bg-gray-300 transition">
+            <button className="px-5 py-2.5 bg-white border border-[#E5DED5] text-[#8C7A6B] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm">
               Simpan Draft
             </button>
+            
+            {/* Tombol PDF - Menggunakan Secondary Dark Tone */}
             <button 
               onClick={() => handleExport('pdf')} 
-              disabled={isLoading}
-              className="px-4 py-2 bg-gray-700 text-white font-medium rounded hover:bg-gray-800 transition disabled:opacity-50"
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-[#4A3F35] text-white font-semibold rounded-lg hover:bg-[#2D241E] transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
             >
-              {isLoading ? 'Processing...' : 'Export PDF'}
+              {loadingFormat === 'pdf' ? <span className="animate-pulse">Processing...</span> : 'Export PDF'}
             </button>
+
+            {/* Tombol DOCX - Menggunakan Primary #B28D35 */}
             <button 
               onClick={() => handleExport('docx')} 
-              disabled={isLoading}
-              className="px-4 py-2 bg-gray-900 text-white font-medium rounded hover:bg-black transition disabled:opacity-50"
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-[#B28D35] text-white font-semibold rounded-lg hover:bg-[#96762B] transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
             >
-              Export DOCX
+              {loadingFormat === 'docx' ? <span className="animate-pulse">Processing...</span> : 'Export DOCX'}
             </button>
           </div>
         </div>
 
-        {/* MAIN CONTENT GRID */}
-        {/* Kolom Kanan (Template) Dihilangkan, jadi Full Width atau Centered */}
-        <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          
-          <div className="p-8">
-            {/* SECTION: Detail Acara */}
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Detail Acara</h2>
+        <div className="w-full bg-white rounded-2xl shadow-xl shadow-[#B28D35]/5 border border-[#F2EFE9] overflow-hidden">
+          <div className="p-8 md:p-12">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Jenis Acara */}
+            <h2 className="text-xl font-bold text-[#2D241E] mb-8 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+              Detail Acara
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Jenis Acara</label>
-                <div className="relative">
-                  <select 
-                    name="jenis_surat" 
-                    value={formData.jenis_surat} 
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-3 appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                  >
-                    <option value="undangan_rapat">Undangan Rapat</option>
-                    <option value="undangan_seminar">Undangan Seminar</option>
-                    <option value="undangan_kegiatan">Undangan Kegiatan</option>
-                  </select>
-                  {/* Chevron Icon */}
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                  </div>
-                </div>
+                <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Jenis Acara</label>
+                <select 
+                  name="jenis_surat" 
+                  value={formData.jenis_surat} 
+                  onChange={handleChange}
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none bg-[#FDFBF7]/50 transition-all cursor-pointer"
+                >
+                  <option value="undangan_rapat">Undangan Rapat</option>
+                  <option value="undangan_seminar">Undangan Seminar</option>
+                  <option value="undangan_kegiatan">Undangan Kegiatan</option>
+                </select>
               </div>
 
-              {/* Lokasi */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Lokasi</label>
+                <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Lokasi</label>
                 <input 
                   type="text" 
                   name="lokasi"
                   value={formData.lokasi}
                   onChange={handleChange}
-                  placeholder="Tuliskan lokasi acara..." 
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Contoh: Gedung Serbaguna Lt. 3" 
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
                 />
               </div>
 
-              {/* Tanggal */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal</label>
+                <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tanggal</label>
                 <input 
                   type="date" 
                   name="tanggalAcara"
                   value={formData.tanggalAcara}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
                 />
-                {!formData.tanggalAcara && <p className="text-xs text-red-500 mt-1">Tanggal tidak boleh kosong.</p>}
               </div>
 
-              {/* Waktu */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Waktu</label>
+                <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Waktu</label>
                 <input 
                   type="time" 
                   name="waktuAcara"
                   value={formData.waktuAcara}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
                 />
               </div>
             </div>
 
-            {/* Agenda */}
-            <div className="mb-8">
-              <label className="block text-sm font-bold text-gray-700 mb-2">Agenda</label>
+            <div className="mb-10">
+              <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Agenda</label>
               <textarea 
                 name="agenda"
                 value={formData.agenda}
                 onChange={handleChange}
                 rows={4} 
-                placeholder="Jelaskan agenda acara secara singkat" 
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                placeholder="Jelaskan poin-poin agenda rapat..." 
+                className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none resize-none transition-all"
               ></textarea>
             </div>
 
-            <hr className="border-gray-200 mb-8" />
+            <div className="h-px bg-[#F2EFE9] mb-10"></div>
 
-            {/* SECTION: Daftar Undangan */}
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Daftar Undangan</h2>
+            <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+              Daftar Undangan
+            </h2>
             
-            <div className="flex gap-3 mb-4">
+            <div className="flex gap-3 mb-6">
               <input 
                 type="text" 
                 value={inputRecipient}
                 onChange={(e) => setInputRecipient(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addRecipient()}
-                placeholder="Nama Lengkap - Jabatan/Afiliasi" 
-                className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                placeholder="Nama Lengkap & Jabatan..." 
+                className="flex-1 border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
               />
               <button 
                 onClick={addRecipient}
-                className="bg-gray-800 hover:bg-black text-white px-6 py-3 rounded-lg font-medium transition"
+                className="bg-[#B28D35] hover:bg-[#96762B] text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95"
               >
                 Tambah
               </button>
             </div>
 
-            {/* List Penerima */}
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 min-h-[100px]">
-              <p className="text-sm font-bold text-gray-500 mb-3">Penerima Surat ({recipients.length})</p>
+            <div className="bg-[#FDFBF7] rounded-2xl border border-[#F2EFE9] p-6 min-h-[150px]">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">List Penerima ({recipients.length})</p>
+              </div>
               
               {recipients.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Belum ada penerima ditambahkan.</p>
+                <div className="flex flex-col items-center justify-center py-8 text-[#A6998E]">
+                  <p className="italic">Belum ada penerima.</p>
+                </div>
               ) : (
-                <ul className="space-y-2">
+                <div className="grid grid-cols-1 gap-3">
                   {recipients.map((name, idx) => (
-                    <li key={idx} className="flex justify-between items-center bg-white p-3 rounded border border-gray-200 shadow-sm">
-                      <span className="text-gray-800 font-medium">{name}</span>
+                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#E5DED5] shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                      <span className="text-[#4A3F35] font-medium">{name}</span>
                       <button 
                         onClick={() => removeRecipient(idx)}
-                        className="text-red-500 hover:text-red-700 text-sm font-bold px-2"
+                        className="text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
                       >
                         Hapus
                       </button>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </div>
-
           </div>
         </div>
-
       </div>
     </div>
   );
