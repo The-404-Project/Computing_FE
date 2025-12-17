@@ -160,8 +160,9 @@ const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
                       Pilih Role Anda
                     </option>
                     <option value="admin">Admin</option>
-                    <option value="dosen">Dosen</option>
-                    <option value="mahasiswa">Mahasiswa</option>
+                    <option value="staff">Staff</option>
+                    <option value="Kaprodi">kaprodi</option>
+                    <option value="dekan">Dekan</option>
                   </select>
                   <div className="absolute right-2 sm:right-3 flex items-center pointer-events-none">
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6b7280' }}>
@@ -180,16 +181,6 @@ const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
                 Masuk
               </button>
             </form>
-
-            {/* Link to Register */}
-            <div className="text-center mt-4 sm:mt-5 md:mt-6">
-              <p className="text-xs sm:text-sm font-normal" style={{ color: '#6b7280' }}>
-                Belum punya akun?{' '}
-                <button type="button" onClick={onNavigateToRegister} className="font-semibold hover:underline bg-transparent border-none cursor-pointer p-0" style={{ color: colors.primary.main }}>
-                  Buat Akun
-                </button>
-              </p>
-            </div>
           </div>
         </div>
       </div>
