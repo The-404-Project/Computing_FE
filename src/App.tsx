@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import SuratPengantarPermohonan from './pages/SuratPengantarPermohonan'; // Modul 4
 import SuratTugas from './pages/SuratTugas'; // Modul 1
@@ -11,7 +10,7 @@ type Page = 'login' | 'register' | 'dashboard' | 'surat_pengantar' | 'surat_unda
 
 /**
  * Component: App
- * Description: Root component handling client-side routing (state-based) 
+ * Description: Root component handling client-side routing (state-based)
  * and global navigation logic between Auth, Dashboard, and specific Modules.
  */
 function App() {
@@ -24,7 +23,7 @@ function App() {
   const handleLogout = () => setCurrentPage('login');
   const handleNavigateToRegister = () => setCurrentPage('register');
   const handleNavigateToLogin = () => setCurrentPage('login');
-  
+
   const handleBackToDashboard = () => setCurrentPage('dashboard');
 
   // Module Navigation Handlers
@@ -39,12 +38,9 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-            <button 
-                onClick={handleBackToDashboard}
-                className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors"
-            >
-                ← Kembali ke Dashboard
-            </button>
+          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
+            ← Kembali ke Dashboard
+          </button>
         </div>
         <SuratPengantarPermohonan />
       </div>
@@ -56,12 +52,9 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-            <button 
-                onClick={handleBackToDashboard} 
-                className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors"
-            >
-                ← Kembali ke Dashboard
-            </button>
+          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
+            ← Kembali ke Dashboard
+          </button>
         </div>
         <SuratTugas />
       </div>
@@ -73,12 +66,9 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-            <button 
-                onClick={handleBackToDashboard} 
-                className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors"
-            >
-                ← Kembali ke Dashboard
-            </button>
+          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
+            ← Kembali ke Dashboard
+          </button>
         </div>
         <SuratUndangan />
       </div>
@@ -87,19 +77,7 @@ function App() {
 
   // Render: Main Dashboard
   if (currentPage === 'dashboard') {
-    return (
-        <Dashboard 
-            onLogout={handleLogout} 
-            onOpenSuratPengantar={handleOpenSuratPengantar} 
-            onOpenSuratTugas={handleOpenSuratTugas}
-            onOpenSuratUndangan={handleOpenSuratUndangan}
-        />
-    );
-  }
-
-  // Render: Authentication Pages
-  if (currentPage === 'register') {
-    return <Register onRegisterSuccess={handleRegisterSuccess} onNavigateToLogin={handleNavigateToLogin} />;
+    return <Dashboard onLogout={handleLogout} onOpenSuratPengantar={handleOpenSuratPengantar} onOpenSuratTugas={handleOpenSuratTugas} onOpenSuratUndangan={handleOpenSuratUndangan} />;
   }
 
   return <Login onLoginSuccess={handleLoginSuccess} onNavigateToRegister={handleNavigateToRegister} />;
