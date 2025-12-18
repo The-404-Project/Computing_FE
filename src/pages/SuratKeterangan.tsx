@@ -53,7 +53,7 @@ export default function SuratKeterangan() {
     setLoadingSearch(true)
     setSearchMessage(null)
     try {
-      const res = await fetch(`http://localhost:4000/api/mahasiswa?nim=${encodeURIComponent(formData.nim)}`)
+      const res = await fetch(`http://localhost:4000/api/surat-keterangan/mahasiswa?nim=${encodeURIComponent(formData.nim)}`)
       if (!res.ok) {
         let msg = 'Data mahasiswa tidak ditemukan'
         try {
