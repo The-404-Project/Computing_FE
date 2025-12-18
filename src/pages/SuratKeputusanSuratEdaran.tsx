@@ -84,6 +84,7 @@ export default function SuratKeputusanSuratEdaran() {
   const [docType, setDocType] = useState<DocType>('SK_DEKAN');
   const [perihal, setPerihal] = useState('');
   const [nomorSurat, setNomorSurat] = useState('');
+  const [tempat, setTempat] = useState('');
   const [tanggalPenetapan, setTanggalPenetapan] = useState('');
 
   const [menimbang, setMenimbang] = useState<SectionPoint[]>([{ id: 1, text: '' }]);
@@ -129,98 +130,81 @@ export default function SuratKeputusanSuratEdaran() {
   }, [activeTab, docType]);
 
   const mapPayload = useCallback((options?: { includeSaveVersionName?: boolean }) => {
-    // Process sections with helper
-    const menimbangData = processSectionData(menimbang, 'alpha');
-    const mengingatData = processSectionData(mengingat, 'alpha');
-    const memperhatikanData = processSectionData(memperhatikan, 'alpha');
+  const menimbangData = processSectionData(menimbang, 'alpha');
+  const mengingatData = processSectionData(mengingat, 'alpha');
+  const memperhatikanData = processSectionData(memperhatikan, 'alpha');
 
-    // Construct Memutuskan Rows
-    const memutuskanRows = [
-        { label: 'Menetapkan : ', content: menetapkan },
-        ...pasal.flatMap((p, i) => {
-            const pasalLabel = `${getPasalNumber(i)} :`;
-            if (p.type === 'text') {
-                return [{ label: pasalLabel, content: p.content }];
-            } else {
-                return p.points.map((pt, ptIndex) => ({
-                    label: ptIndex === 0 ? pasalLabel : '', // Only show label on first point
-                    content: `${String.fromCharCode(97 + ptIndex)}. ${pt.text}`
-                }));
-            }
-        })
-    ];
+  // ============================
+  // MEMUTUSKAN (HIERARKIS)
+  // ============================
+  const memutuskan = {
+    pembuka: menetapkan,
+    pasal: pasal.map((p, i) => ({
+      title: getPasalNumber(i),
+      type: p.type,
+      content: p.content,
+      points: p.points.map((pt, idx) => ({
+        label: String.fromCharCode(97 + idx) + '.', // a. b. c.
+        content: pt.text
+      }))
+    }))
+  };
 
-    const payload: {
-      templateName: string;
-      docType: DocType;
-      data: {
-        perihal: string;
-        nomor_surat: string;
-        tanggal_penetapan: string;
-        menimbang: string[];
-        menimbang_content: string;
-        menimbang_rows: { label: string; content: string }[];
-        mengingat: string[];
-        mengingat_content: string;
-        mengingat_rows: { label: string; content: string }[];
-        memperhatikan: string[];
-        memperhatikan_content: string;
-        memperhatikan_rows: { label: string; content: string }[];
-        memutuskan: string[]; // Keep for compatibility if needed
-        memutuskan_rows: { label: string; content: string }[];
-        approvers: { role: string; name: string }[];
-      };
-      saveVersionName?: string;
-    } = {
-      templateName: TEMPLATE_MAP[docType],
-      docType,
-      data: {
-        perihal,
-        nomor_surat: nomorSurat,
-        tanggal_penetapan: tanggalPenetapan,
-        
-        menimbang: menimbangData.map(d => d.fullText),
-        menimbang_content: menimbangData.map(d => d.fullText).join('\n'),
-        menimbang_rows: menimbangData.map(d => ({ label: d.label, content: d.content })),
-        
-        mengingat: mengingatData.map(d => d.fullText),
-        mengingat_content: mengingatData.map(d => d.fullText).join('\n'),
-        mengingat_rows: mengingatData.map(d => ({ label: d.label, content: d.content })),
-        
-        memperhatikan: memperhatikanData.map(d => d.fullText),
-        memperhatikan_content: memperhatikanData.map(d => d.fullText).join('\n'),
-        memperhatikan_rows: memperhatikanData.map(d => ({ label: d.label, content: d.content })),
-
-        memutuskan: memutuskanRows.map(r => `${r.label} ${r.content}`), // Fallback
-        memutuskan_rows: memutuskanRows,
-        approvers: approvers.map(a => ({
-          role: a.role,
-          name: a.name,
-        })),
-      },
-    };
-
-    if (options?.includeSaveVersionName) {
-      const trimmed = saveVersionName.trim();
-      if (trimmed) {
-        payload.saveVersionName = trimmed;
-      }
-    }
-
-    return payload;
-  }, [
+  const payload: any = {
+    templateName: TEMPLATE_MAP[docType],
     docType,
-    perihal,
-    nomorSurat,
-    tanggalPenetapan,
-    menimbang,
-    mengingat,
-    memperhatikan,
-    menetapkan,
-    pasal,
-    approvers,
-    saveVersionName,
-  ]);
+    data: {
+      perihal,
+      nomor_surat: nomorSurat,
+      tempat,
+      tanggal_penetapan: tanggalPenetapan,
+
+      // ===== Dasar Hukum =====
+      menimbang_rows: menimbangData.map(d => ({
+        label: d.label,
+        content: d.content
+      })),
+      mengingat_rows: mengingatData.map(d => ({
+        label: d.label,
+        content: d.content
+      })),
+      memperhatikan_rows: memperhatikanData.map(d => ({
+        label: d.label,
+        content: d.content
+      })),
+
+      // ===== MEMUTUSKAN (STRUKTURAL) =====
+      memutuskan,
+
+      // ===== Penandatangan =====
+      approvers: approvers.map(a => ({
+        role: a.role,
+        name: a.name
+      }))
+    }
+  };
+
+  if (options?.includeSaveVersionName) {
+    const trimmed = saveVersionName.trim();
+    if (trimmed) payload.saveVersionName = trimmed;
+  }
+
+  return payload;
+}, [
+  docType,
+  perihal,
+  nomorSurat,
+  tempat,
+  tanggalPenetapan,
+  menimbang,
+  mengingat,
+  memperhatikan,
+  menetapkan,
+  pasal,
+  approvers,
+  saveVersionName
+]);
+
 
   // Debounced Preview
   useEffect(() => {
@@ -298,72 +282,8 @@ export default function SuratKeputusanSuratEdaran() {
   };
 
   const exportPdf = async () => {
-    setShowExportMenu(false); // Close menu if open
-    
-  try {
-      // Menggunakan endpoint preview untuk mendapatkan HTML
-      const res = await fetch('/api/modul5/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mapPayload()),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        window.alert('Gagal mengambil preview PDF: ' + text);
-        return;
-      }
-
-      const htmlContent = await res.text();
-
-      // Membuka window baru untuk print
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert("Pop-up blocked! Mohon izinkan pop-up untuk mencetak PDF.");
-        return;
-      }
-
-      // Menulis konten HTML ke window baru dengan style cetak
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Cetak PDF - ${docType}</title>
-            <style>
-              @page { size: A4; margin: 2.54cm; }
-              body { 
-                font-family: 'Times New Roman', serif; 
-                line-height: 1.5; 
-                color: #000;
-                background: #fff;
-                margin: 0;
-                padding: 0;
-              }
-              /* Styling tambahan untuk hasil konversi mammoth agar lebih rapi */
-              h1 { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 1em; text-transform: uppercase; }
-              h2 { text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 1em; text-transform: uppercase; }
-              p { margin-bottom: 1em; text-align: justify; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-              td, th { vertical-align: top; padding: 4px; }
-            </style>
-          </head>
-          <body>
-            ${htmlContent}
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                }, 500);
-              };
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-
-    } catch (e) {
-        console.error(e);
-        alert("Terjadi kesalahan saat memproses PDF.");
-    }
+    setShowExportMenu(false);
+    window.print();
   };
 
   const fetchVersions = async () => {
@@ -387,6 +307,29 @@ export default function SuratKeputusanSuratEdaran() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-800">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-preview-container, .print-preview-container * {
+            visibility: visible;
+          }
+          .print-preview-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          header, footer, .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
       {/* HEADER */}
       <header className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-3">
@@ -515,6 +458,16 @@ export default function SuratKeputusanSuratEdaran() {
                                 placeholder="123/UN1/..."
                                 value={nomorSurat}
                                 onChange={e => setNomorSurat(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Tempat Penetapan</label>
+                            <input 
+                                type="text" 
+                                className="w-full border-gray-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                                placeholder="Bandung"
+                                value={tempat}
+                                onChange={e => setTempat(e.target.value)}
                             />
                         </div>
                         <div>
