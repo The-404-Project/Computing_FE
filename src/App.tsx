@@ -7,6 +7,8 @@ import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
 import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
+import SuratLAAK from './pages/SuratLAAK';
+
 
 // Define available application views/routes
 type Page = 'login' | 'register' | 'dashboard' | 'admin' | 'surat_pengantar' | 'surat_undangan' | 'surat_tugas' | 'surat_keterangan' | 'surat_keputusan' | 'surat_prodi' | 'surat_laak' | 'arsip_surat';
@@ -184,7 +186,7 @@ function App() {
             ← Kembali ke Dashboard
           </button>
         </div>
-        <ComingSoon title="Surat LAAK (Akreditasi & Audit)" description="Modul Surat LAAK sedang dalam pengembangan" onBack={handleBackToDashboard} />
+        <SuratLAAK/>
       </div>
     );
   }
