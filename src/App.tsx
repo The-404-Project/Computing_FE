@@ -5,6 +5,7 @@ import AdminPage from './pages/AdminPage';
 import SuratPengantarPermohonan from './pages/SuratPengantarPermohonan';
 import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
+import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
 
 // Define available application views/routes
@@ -141,7 +142,7 @@ function App() {
             ← Kembali ke Dashboard
           </button>
         </div>
-        <ComingSoon title="Surat Keterangan" description="Modul Surat Keterangan sedang dalam pengembangan" onBack={handleBackToDashboard} />
+        <SuratKeterangan />
       </div>
     );
   }
