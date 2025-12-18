@@ -58,24 +58,31 @@ const SuratUndangan = () => {
     try {
       setLoadingFormat(format);
 
+      // Di dalam function handleExport
       const payload = {
         jenis_surat: formData.jenis_surat,
-        nomor_surat: formData.nomorSurat || "001/INV/2023", // Default value jika kosong
+        nomor_surat: formData.nomorSurat || "001/INV/2023",
         perihal: formData.perihal,
         lampiran: formData.lampiran,
 
-        // Data Acara
-        hari: new Date(formData.tanggalAcara).toLocaleDateString('id-ID', { weekday: 'long' }),
-        tanggal: new Date(formData.tanggalAcara).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-        waktu: formData.waktuAcara,
-        lokasi: formData.lokasi,
+        // --- BAGIAN INI DIPERBAIKI ---
+        // Backend butuh "tanggalAcara" (YYYY-MM-DD) untuk hitung hari & tanggal indo
+        tanggalAcara: formData.tanggalAcara,
+
+        // Backend butuh "waktuMulai" atau "waktuAcara"
+        waktuMulai: formData.waktuAcara,
+
+        // Backend butuh "tempat", tapi state kamu namanya "lokasi"
+        tempat: formData.lokasi,
+
+        // Agenda
         agenda: formData.agenda,
 
-        // PENTING: Format Array untuk Looping di DOCX
+        // List Tamu (Sudah Benar)
         list_tamu: recipients.map(nama => ({ nama: nama }))
       };
 
-      const endpoint = `http://localhost:3000/api/surat-undangan/create?format=${format}`;
+      const endpoint = `http://localhost:4000/api/surat-undangan/create?format=${format}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
