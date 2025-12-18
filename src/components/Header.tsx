@@ -14,7 +14,7 @@ const Header = ({ onBackToDashboard, activeMenuItem = 'dashboard' }: HeaderProps
   const isDashboard = activeMenuItem === 'dashboard';
 
   return (
-    <header className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: colors.primary.dark }}>
+    <header className="sticky top-0 flex items-center justify-between px-6 py-4 z-50" style={{ backgroundColor: colors.primary.dark }}>
       <div className="flex items-center gap-4">
         {/* Back Button - hanya muncul jika bukan dashboard */}
         {!isDashboard && onBackToDashboard && (

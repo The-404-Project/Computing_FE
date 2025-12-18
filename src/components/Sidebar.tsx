@@ -64,7 +64,7 @@ const Sidebar = ({
             height: '40px',
             backgroundColor: colors.primary.main,
             color: '#ffffff',
-            zIndex: 100,
+            zIndex: 40,
           }}
           aria-label="Tutup Sidebar"
         >
@@ -85,7 +85,7 @@ const Sidebar = ({
             height: '40px',
             backgroundColor: colors.primary.main,
             color: '#ffffff',
-            zIndex: 1000,
+            zIndex: 40,
             pointerEvents: 'auto',
           }}
           aria-label="Buka Sidebar"
