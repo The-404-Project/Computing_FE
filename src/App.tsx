@@ -7,6 +7,7 @@ import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
 import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
+import ArsipSurat from './pages/ArsipSurat';
 import Layout from './components/Layout';
 
 // Define available application views/routes
@@ -271,7 +272,7 @@ function App() {
         onOpenArsipSurat={handleOpenArsipSurat}
         activeMenuItem="arsip_surat"
       >
-        <ComingSoon title="Arsip Surat" description="Fitur Arsip Surat sedang dalam pengembangan" onBack={handleBackToDashboard} />
+        <ArsipSurat />
       </Layout>
     );
   }
