@@ -9,10 +9,11 @@ import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
 import ArsipSurat from './pages/ArsipSurat';
 import SuratLAAK from './pages/SuratLAAK';
+import TemplateManagement from './pages/TemplateManagement';
 import Layout from './components/Layout';
 
 // Define available application views/routes
-type Page = 'login' | 'register' | 'dashboard' | 'admin' | 'surat_pengantar' | 'surat_undangan' | 'surat_tugas' | 'surat_keterangan' | 'surat_keputusan' | 'surat_prodi' | 'surat_laak' | 'arsip_surat';
+type Page = 'login' | 'register' | 'dashboard' | 'admin' | 'template_management' | 'surat_pengantar' | 'surat_undangan' | 'surat_tugas' | 'surat_keterangan' | 'surat_keputusan' | 'surat_prodi' | 'surat_laak' | 'arsip_surat';
 
 /**
  * Component: App
@@ -79,6 +80,7 @@ function App() {
   const handleOpenSuratProdi = () => setCurrentPage('surat_prodi');
   const handleOpenSuratLaak = () => setCurrentPage('surat_laak');
   const handleOpenArsipSurat = () => setCurrentPage('arsip_surat');
+  const handleOpenTemplateManagement = () => setCurrentPage('template_management');
 
   // Render Admin Page
   if (currentPage === 'admin') {
@@ -95,9 +97,33 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="admin"
       >
         <AdminPage onBack={handleBackToDashboard} />
+      </Layout>
+    );
+  }
+
+  // Render: Template Management
+  if (currentPage === 'template_management') {
+    return (
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="template_management"
+      >
+        <TemplateManagement />
       </Layout>
     );
   }
@@ -117,6 +143,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_pengantar"
       >
         <SuratPengantarPermohonan />
@@ -139,6 +166,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_tugas"
       >
         <SuratTugas />
@@ -161,6 +189,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_undangan"
       >
         <SuratUndangan />
@@ -183,6 +212,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_keterangan"
       >
         <SuratKeterangan />
@@ -205,6 +235,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_keputusan"
       >
         <ComingSoon title="Surat Keputusan (SK) & Surat Edaran" description="Modul Surat Keputusan sedang dalam pengembangan" onBack={handleBackToDashboard} />
@@ -227,6 +258,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_prodi"
       >
         <ComingSoon title="Surat Program Studi" description="Modul Surat Program Studi sedang dalam pengembangan" onBack={handleBackToDashboard} />
@@ -249,6 +281,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_laak"
       >
         <SuratLAAK />
@@ -271,6 +304,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="arsip_surat"
       >
         <ArsipSurat />
@@ -292,6 +326,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
       />
     );
   }

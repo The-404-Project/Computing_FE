@@ -170,11 +170,6 @@ const AdminPage = ({ onBack }: AdminPageProps) => {
               <button onClick={handleCreate} className="px-4 py-2 text-sm font-semibold rounded-lg transition-all" style={{ backgroundColor: colors.primary.main, color: colors.neutral.white }}>
                 + Tambah User
               </button>
-              {onBack && (
-                <button onClick={onBack} className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:bg-gray-100" style={{ color: '#374151', border: '1px solid #d1d5db' }}>
-                  Kembali
-                </button>
-              )}
             </div>
           </div>
         </div>

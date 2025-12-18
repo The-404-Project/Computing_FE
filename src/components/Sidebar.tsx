@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { colors } from '../design-system/colors';
-import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, Building2, GraduationCap, Award } from 'lucide-react';
+import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, Building2, GraduationCap, Award, FileText } from 'lucide-react';
 
 interface SidebarProps {
   onLogout?: () => void;
@@ -13,6 +13,7 @@ interface SidebarProps {
   onOpenSuratProdi?: () => void;
   onOpenSuratLaak?: () => void;
   onOpenArsipSurat?: () => void;
+  onOpenTemplateManagement?: () => void;
   activeMenuItem?: string;
 }
 
@@ -27,6 +28,7 @@ const Sidebar = ({
   onOpenSuratProdi,
   onOpenSuratLaak,
   onOpenArsipSurat,
+  onOpenTemplateManagement,
   activeMenuItem = 'dashboard',
 }: SidebarProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -261,7 +263,7 @@ const Sidebar = ({
                     }}
                   >
                     <Archive className="w-5 h-5" style={{ color: colors.primary.main }} />
-                    <span className="font-medium">Arsip Surat</span>
+                    <span className="font-semibold text-sm">Arsip Surat</span>
                   </button>
                   {isAdmin && onOpenAdmin && (
                     <button
@@ -273,7 +275,20 @@ const Sidebar = ({
                       }}
                     >
                       <UserCog className="w-5 h-5" style={{ color: colors.primary.main }} />
-                      <span className="font-medium">Manajemen User</span>
+                      <span className="font-semibold text-sm">Manajemen User</span>
+                    </button>
+                  )}
+                  {isAdmin && onOpenTemplateManagement && (
+                    <button
+                      onClick={onOpenTemplateManagement}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'template_management' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
+                      <FileText className="w-5 h-5" style={{ color: colors.primary.main }} />
+                      <span className="font-semibold text-sm">Manajemen Template</span>
                     </button>
                   )}
                 </div>

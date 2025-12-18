@@ -16,6 +16,7 @@ interface LayoutProps {
   onOpenSuratProdi?: () => void;
   onOpenSuratLaak?: () => void;
   onOpenArsipSurat?: () => void;
+  onOpenTemplateManagement?: () => void;
   activeMenuItem?: string;
 }
 
@@ -32,6 +33,7 @@ const Layout = ({
   onOpenSuratProdi,
   onOpenSuratLaak,
   onOpenArsipSurat,
+  onOpenTemplateManagement,
   activeMenuItem = 'dashboard',
 }: LayoutProps) => {
   return (
@@ -58,6 +60,7 @@ const Layout = ({
           onOpenSuratProdi={onOpenSuratProdi}
           onOpenSuratLaak={onOpenSuratLaak}
           onOpenArsipSurat={onOpenArsipSurat}
+          onOpenTemplateManagement={onOpenTemplateManagement}
           activeMenuItem={activeMenuItem}
         />
       </div>

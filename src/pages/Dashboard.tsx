@@ -12,9 +12,22 @@ interface DashboardProps {
   onOpenSuratProdi?: () => void;
   onOpenSuratLaak?: () => void;
   onOpenArsipSurat?: () => void;
+  onOpenTemplateManagement?: () => void;
 }
 
-const Dashboard = ({ onLogout, onOpenSuratPengantar, onOpenSuratUndangan, onOpenSuratTugas, onOpenAdmin, onOpenSuratKeterangan, onOpenSuratKeputusan, onOpenSuratProdi, onOpenSuratLaak, onOpenArsipSurat }: DashboardProps) => {
+const Dashboard = ({
+  onLogout,
+  onOpenSuratPengantar,
+  onOpenSuratUndangan,
+  onOpenSuratTugas,
+  onOpenAdmin,
+  onOpenSuratKeterangan,
+  onOpenSuratKeputusan,
+  onOpenSuratProdi,
+  onOpenSuratLaak,
+  onOpenArsipSurat,
+  onOpenTemplateManagement,
+}: DashboardProps) => {
   return (
     <Layout
       onLogout={onLogout}
@@ -27,6 +40,7 @@ const Dashboard = ({ onLogout, onOpenSuratPengantar, onOpenSuratUndangan, onOpen
       onOpenSuratProdi={onOpenSuratProdi}
       onOpenSuratLaak={onOpenSuratLaak}
       onOpenArsipSurat={onOpenArsipSurat}
+      onOpenTemplateManagement={onOpenTemplateManagement}
       activeMenuItem="dashboard"
     >
       {/* Welcome Section */}

@@ -263,10 +263,7 @@ const ArsipSurat = () => {
             >
               <option value="">Semua Status</option>
               <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
               <option value="generated">Generated</option>
-              <option value="sent">Sent</option>
             </select>
           </div>
 
