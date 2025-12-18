@@ -28,7 +28,13 @@ export default function SuratKeterangan() {
 
   const [showDropdown, setShowDropdown] = useState(false)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
-  const statusMahasiswa = "Aktif"
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
+  const [statusMahasiswa, setStatusMahasiswa] = useState("Aktif")
+  const [loadingSearch, setLoadingSearch] = useState(false)
+  const [searchMessage, setSearchMessage] = useState<string | null>(null)
+  const [generatedFile, setGeneratedFile] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [existingFile, setExistingFile] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -43,16 +49,113 @@ export default function SuratKeterangan() {
     // Logic untuk preview dokumen
   }
 
+  const handleSearch = async () => {
+    setLoadingSearch(true)
+    setSearchMessage(null)
+    try {
+      const res = await fetch(`http://localhost:4000/api/mahasiswa?nim=${encodeURIComponent(formData.nim)}`)
+      if (!res.ok) {
+        let msg = 'Data mahasiswa tidak ditemukan'
+        try {
+          const body = await res.json()
+          if (body && body.message) msg = body.message
+        } catch {}
+        setSearchMessage(msg)
+        setLoadingSearch(false)
+        return
+      }
+      const data = await res.json()
+      setFormData((prev) => ({
+        ...prev,
+        namaMahasiswa: data.namaMahasiswa || prev.namaMahasiswa,
+        programStudi: data.programStudi || prev.programStudi,
+        tahunAkademik: data.tahunAkademik || prev.tahunAkademik,
+      }))
+      setStatusMahasiswa(data.status || statusMahasiswa)
+      setSearchMessage('Data mahasiswa berhasil ditemukan.')
+    } catch (e) {
+      setSearchMessage('Terjadi kesalahan jaringan')
+    } finally {
+      setLoadingSearch(false)
+    }
+  }
+
   const handleGenerate = () => {
-    console.log("Generating document")
-    setShowSuccessPopup(true)
-    // Logic untuk generate dokumen
+    const formatDateID = (d: Date) => {
+      const months = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+      ]
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+    }
+    const payload = {
+      nomor_surat: formData.nomorRegistrasi,
+      nama: formData.namaMahasiswa,
+      nim: formData.nim,
+      program_studi: formData.programStudi,
+      tahun_akademik: formData.tahunAkademik,
+      status: statusMahasiswa,
+      keperluan: formData.keterangan,
+      kota: "Depok",
+      tanggal: formatDateID(new Date()),
+      nama_dekan: "Prof. Dr. Mirna Adriani, M.Sc.",
+      nip_dekan: "196512345678901234",
+      jenis_surat: formData.jenisSurat,
+    }
+    fetch("http://localhost:4000/api/surat-keterangan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(async (res) => {
+        let data: any = {}
+        try {
+          data = await res.json()
+        } catch {}
+        if (!res.ok) {
+          const msg = (data && data.message) ? String(data.message) : 'Gagal membuat dokumen'
+          setErrorMessage(msg)
+          setGeneratedFile(null)
+          setExistingFile(data && data.file ? String(data.file) : null)
+          setShowSuccessPopup(false)
+          setShowErrorPopup(true)
+          return
+        }
+        setGeneratedFile(data.file || null)
+        setExistingFile(null)
+        setShowErrorPopup(false)
+        setShowSuccessPopup(true)
+      })
+      .catch(() => {
+        setGeneratedFile(null)
+        setExistingFile(null)
+        setShowSuccessPopup(false)
+        setErrorMessage('Terjadi kesalahan jaringan')
+        setShowErrorPopup(true)
+      })
   }
 
   const handleExport = (format: "docx" | "pdf") => {
-    console.log(`Exporting as ${format.toUpperCase()}`)
+    if (format === "docx" && generatedFile) {
+      const url = `http://localhost:4000/files/${encodeURIComponent(generatedFile)}`
+      const a = document.createElement("a")
+      a.href = url
+      a.download = generatedFile
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
     setShowSuccessPopup(false)
-    // Logic untuk export dokumen
   }
 
   return (
@@ -99,7 +202,7 @@ export default function SuratKeterangan() {
                     } as React.CSSProperties
                   }
                 />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button onClick={handleSearch} disabled={loadingSearch} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -110,9 +213,14 @@ export default function SuratKeterangan() {
                   </svg>
                 </button>
               </div>
-              <p style={{ color: colors.semantic.success }} className="text-sm">
-                Data mahasiswa berhasil ditemukan.
-              </p>
+              {searchMessage && (
+                <p
+                  style={{ color: searchMessage.toLowerCase().includes('berhasil') ? colors.semantic.success : colors.semantic.error }}
+                  className="text-sm"
+                >
+                  {searchMessage}
+                </p>
+              )}
             </div>
 
             {/* Grid 2 Columns */}
@@ -367,6 +475,64 @@ export default function SuratKeterangan() {
               >
                 <Download className="w-5 h-5" />
                 Export PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showErrorPopup && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: `${colors.neutral.black}33` }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-6">
+            <div className="flex justify-end">
+              <button onClick={() => setShowErrorPopup(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="text-center space-y-4">
+              <div
+                className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
+                style={{ backgroundColor: `${colors.semantic.error}20` }}
+              >
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: colors.semantic.error }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Gagal Membuat Dokumen</h3>
+              <p className="text-gray-600 text-sm">{errorMessage || 'Terjadi kesalahan'}</p>
+            </div>
+            <div className="flex justify-center gap-3">
+              {existingFile && (
+                <button
+                  onClick={() => {
+                    const url = `http://localhost:4000/files/${encodeURIComponent(existingFile)}`
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = existingFile
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                  }}
+                  className="px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all"
+                  style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
+                >
+                  Unduh DOCX
+                </button>
+              )}
+              <button
+                onClick={() => setShowErrorPopup(false)}
+                className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-80 transition-all"
+                style={{ backgroundColor: colors.primary.main }}
+              >
+                Tutup
               </button>
             </div>
           </div>
