@@ -131,8 +131,8 @@ export default function SuratKeputusanSuratEdaran() {
 
   const mapPayload = useCallback((options?: { includeSaveVersionName?: boolean }) => {
   const menimbangData = processSectionData(menimbang, 'alpha');
-  const mengingatData = processSectionData(mengingat, 'alpha');
-  const memperhatikanData = processSectionData(memperhatikan, 'alpha');
+  const mengingatData = processSectionData(mengingat, 'numeric');
+  const memperhatikanData = processSectionData(memperhatikan, 'numeric');
 
   // ============================
   // MEMUTUSKAN (HIERARKIS)

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { colors } from '../design-system/colors';
+import api from '../services/api'; // Pastikan file services/api.ts sudah dibuat
 
 interface LoginProps {
   onLoginSuccess?: () => void;
@@ -7,17 +8,45 @@ interface LoginProps {
 }
 
 const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
-  const [email, setEmail] = useState('');
+  // Ganti Email jadi Username sesuai Backend
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // State tambahan untuk handling API
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ email, password, role });
-    // Call the callback to notify parent component
-    if (onLoginSuccess) {
-      onLoginSuccess();
+    setError('');
+    setLoading(true);
+
+    try {
+      // 1. Tembak API Backend
+      // Payload harus { username, password } sesuai controller backend
+      const response = await api.post('/auth/login', {
+        username,
+        password,
+      });
+
+      console.log('Login Sukses:', response.data);
+
+      // 2. Simpan Token & User Data
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      // 3. Pindah ke Dashboard
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+    } catch (err: any) {
+      console.error('Login Gagal:', err);
+      // Ambil pesan error dari backend atau pesan default
+      const message = err.response?.data?.message || 'Gagal terhubung ke server.';
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,24 +83,27 @@ const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
 
           {/* Form Fields */}
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-5 md:py-6">
+            {/* Error Message Box */}
+            {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm text-center">{error}</div>}
+
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              {/* Email Field */}
+              {/* Username Field (Updated from Email) */}
               <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label htmlFor="email" className="text-sm sm:text-base font-semibold" style={{ color: '#374151' }}>
-                  Email
+                <label htmlFor="username" className="text-sm sm:text-base font-semibold" style={{ color: '#374151' }}>
+                  Username
                 </label>
                 <div className="relative flex items-center">
                   <div className="absolute left-3 flex items-center pointer-events-none">
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6b7280' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="johndoe@staff.telkomuniversity.ac.id"
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Masukkan Username (cth: admin)"
                     className="w-full bg-transparent border rounded pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm outline-none transition-colors focus:border-gray-400"
                     style={{
                       borderColor: '#d1d5db',
@@ -99,7 +131,7 @@ const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Masukkan Password anda disini"
+                    placeholder="Masukkan Password"
                     className="w-full bg-transparent border rounded pl-10 sm:pl-11 pr-10 sm:pr-12 py-2.5 sm:py-3 text-sm outline-none transition-colors focus:border-gray-400"
                     style={{
                       borderColor: '#d1d5db',
@@ -133,63 +165,18 @@ const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
                 </div>
               </div>
 
-              {/* Role Field */}
-              <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label htmlFor="role" className="text-sm sm:text-base font-semibold" style={{ color: '#374151' }}>
-                  Role
-                </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 flex items-center pointer-events-none z-10">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6b7280' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <select
-                    id="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full bg-transparent border rounded pl-10 sm:pl-11 pr-9 sm:pr-10 py-2.5 sm:py-3 text-sm outline-none appearance-none cursor-pointer transition-colors focus:border-gray-400"
-                    style={{
-                      borderColor: '#d1d5db',
-                      color: '#111827',
-                      backgroundColor: '#f9fafb',
-                    }}
-                    required
-                  >
-                    <option value="" disabled>
-                      Pilih Role Anda
-                    </option>
-                    <option value="admin">Admin</option>
-                    <option value="dosen">Dosen</option>
-                    <option value="mahasiswa">Mahasiswa</option>
-                  </select>
-                  <div className="absolute right-2 sm:right-3 flex items-center pointer-events-none">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6b7280' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              {/* Role Dropdown dihapus karena Role ditentukan otomatis oleh Sistem */}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3 sm:py-3.5 md:py-4 font-semibold text-sm sm:text-base mt-4 sm:mt-6 rounded-lg transition-all hover:bg-gray-700 active:scale-[0.98]"
+                disabled={loading}
+                className="w-full py-3 sm:py-3.5 md:py-4 font-semibold text-sm sm:text-base mt-4 sm:mt-6 rounded-lg transition-all hover:bg-gray-700 active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#374151', color: colors.neutral.white }}
               >
-                Masuk
+                {loading ? 'Memproses...' : 'Masuk'}
               </button>
             </form>
-
-            {/* Link to Register */}
-            <div className="text-center mt-4 sm:mt-5 md:mt-6">
-              <p className="text-xs sm:text-sm font-normal" style={{ color: '#6b7280' }}>
-                Belum punya akun?{' '}
-                <button type="button" onClick={onNavigateToRegister} className="font-semibold hover:underline bg-transparent border-none cursor-pointer p-0" style={{ color: colors.primary.main }}>
-                  Buat Akun
-                </button>
-              </p>
-            </div>
           </div>
         </div>
       </div>
