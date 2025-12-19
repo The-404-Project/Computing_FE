@@ -147,7 +147,7 @@ export default function SuratKeterangan() {
 
   const handleExport = (format: "docx" | "pdf") => {
     if (format === "docx" && generatedFile) {
-      const url = `http://localhost:4000/files/${encodeURIComponent(generatedFile)}`
+      const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(generatedFile)}`
       const a = document.createElement("a")
       a.href = url
       a.download = generatedFile
@@ -513,7 +513,7 @@ export default function SuratKeterangan() {
               {existingFile && (
                 <button
                   onClick={() => {
-                    const url = `http://localhost:4000/files/${encodeURIComponent(existingFile)}`
+                    const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(existingFile)}`
                     const a = document.createElement('a')
                     a.href = url
                     a.download = existingFile
