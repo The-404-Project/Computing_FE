@@ -5,6 +5,7 @@ import AdminPage from './pages/AdminPage';
 import SuratPengantarPermohonan from './pages/SuratPengantarPermohonan';
 import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
+import SuratKeputusanSuratEdaran from './pages/SuratKeputusanSuratEdaran';
 import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
 import ArsipSurat from './pages/ArsipSurat';
@@ -70,6 +71,7 @@ function App() {
     localStorage.removeItem('currentPage');
     setCurrentPage('login');
   };
+
   const handleBackToDashboard = () => setCurrentPage('dashboard');
   const handleOpenAdmin = () => setCurrentPage('admin');
   const handleOpenSuratPengantar = () => setCurrentPage('surat_pengantar');
@@ -238,7 +240,7 @@ function App() {
         onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_keputusan"
       >
-        <ComingSoon title="Surat Keputusan (SK) & Surat Edaran" description="Modul Surat Keputusan sedang dalam pengembangan" onBack={handleBackToDashboard} />
+        <SuratKeputusanSuratEdaran />
       </Layout>
     );
   }

@@ -37,7 +37,7 @@ const Dashboard = ({
   onOpenSuratProdi,
   onOpenSuratLaak,
   onOpenArsipSurat,
-  onOpenTemplateManagement,
+  onOpenTemplateManagement 
 }: DashboardProps) => {
   const [stats, setStats] = useState<DocumentStats>({
     total: 0,
