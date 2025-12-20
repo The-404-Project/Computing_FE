@@ -46,39 +46,21 @@ const SuratUndangan = () => {
   };
 
   const handleExport = async (format: 'docx' | 'pdf') => {
-    if (recipients.length === 0) {
-      alert("Harap masukkan setidaknya satu nama di Daftar Undangan!");
-      return;
-    }
-    if (!formData.tanggalAcara || !formData.lokasi) {
-      alert("Mohon lengkapi Detail Acara!");
-      return;
-    }
+    // ... validasi lain ...
 
     try {
       setLoadingFormat(format);
 
-      // Di dalam function handleExport
       const payload = {
         jenis_surat: formData.jenis_surat,
-        nomor_surat: formData.nomorSurat || "001/INV/2023",
+        nomorSurat: formData.nomorSurat,
+
         perihal: formData.perihal,
         lampiran: formData.lampiran,
-
-        // --- BAGIAN INI DIPERBAIKI ---
-        // Backend butuh "tanggalAcara" (YYYY-MM-DD) untuk hitung hari & tanggal indo
         tanggalAcara: formData.tanggalAcara,
-
-        // Backend butuh "waktuMulai" atau "waktuAcara"
         waktuMulai: formData.waktuAcara,
-
-        // Backend butuh "tempat", tapi state kamu namanya "lokasi"
         tempat: formData.lokasi,
-
-        // Agenda
         agenda: formData.agenda,
-
-        // List Tamu (Sudah Benar)
         list_tamu: recipients.map(nama => ({ nama: nama }))
       };
 
@@ -154,6 +136,20 @@ const SuratUndangan = () => {
               <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
               Detail Acara
             </h2>
+
+            <div className="md:col-span-2 md:grid-cols-2 gap-8 mb-8">
+              <label className="block text-sm font-semibold text-[#6B5E54] mb-2">
+                Nomor Surat <span className="text-[#B28D35] text-xs font-normal italic">(Opsional - Kosongkan untuk Auto Generate)</span>
+              </label>
+              <input
+                type="text"
+                name="nomorSurat"
+                value={formData.nomorSurat}
+                onChange={handleChange}
+                placeholder="Contoh: 005/UND/X/2025 (Biarkan kosong untuk Auto-Generate)"
+                className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all placeholder:text-gray-300"
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
