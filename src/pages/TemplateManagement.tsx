@@ -26,8 +26,6 @@ const TemplateManagement = () => {
     template_name: '',
     template_type: '',
     description: '',
-    variables: '',
-    is_active: true,
   });
   const [file, setFile] = useState<File | null>(null);
   const [filterType, setFilterType] = useState('');
@@ -64,8 +62,7 @@ const TemplateManagement = () => {
       formDataToSend.append('template_name', formData.template_name);
       formDataToSend.append('template_type', formData.template_type);
       formDataToSend.append('description', formData.description);
-      formDataToSend.append('variables', formData.variables || '[]');
-      formDataToSend.append('is_active', formData.is_active.toString());
+      formDataToSend.append('is_active', 'true');
 
       if (editingTemplate) {
         // Update template
@@ -77,6 +74,11 @@ const TemplateManagement = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
+        setShowModal(false);
+        setEditingTemplate(null);
+        setFormData({ template_name: '', template_type: '', description: '' });
+        setFile(null);
+        fetchTemplates();
       } else {
         // Create template
         if (!file) {
@@ -84,18 +86,57 @@ const TemplateManagement = () => {
           return;
         }
         formDataToSend.append('file', file);
-        await api.post('/dashboard/templates', formDataToSend, {
+        const response = await api.post('/dashboard/templates', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-      }
 
-      setShowModal(false);
-      setEditingTemplate(null);
-      setFormData({ template_name: '', template_type: '', description: '', variables: '', is_active: true });
-      setFile(null);
-      fetchTemplates();
+        // Redirect ke halaman sesuai jenis template
+        setShowModal(false);
+        setEditingTemplate(null);
+        setFormData({ template_name: '', template_type: '', description: '' });
+        setFile(null);
+        fetchTemplates();
+
+        // Redirect berdasarkan jenis template setelah delay singkat
+        const templateType = formData.template_type;
+        const redirectMap: { [key: string]: string } = {
+          // Surat Tugas & Perintah
+          'surat_tugas': 'surat_tugas',
+          'sppd': 'surat_tugas', // SPPD redirect ke surat tugas
+          
+          // Surat Undangan
+          'surat_undangan': 'surat_undangan',
+          
+          // Surat Keterangan
+          'surat_keterangan_aktif_kuliah': 'surat_keterangan',
+          'surat_keterangan_lulus': 'surat_keterangan',
+          'surat_keterangan_kelakuan_baik': 'surat_keterangan',
+          'surat_keterangan_bebas_pinjaman': 'surat_keterangan',
+          'surat_keterangan': 'surat_keterangan',
+          
+          // Surat Pengantar
+          'surat_pengantar_A': 'surat_pengantar',
+          'surat_pengantar_B': 'surat_pengantar',
+          'surat_pengantar': 'surat_pengantar',
+          
+          // Surat Lainnya
+          'surat_keputusan': 'surat_keputusan',
+          'surat_prodi': 'surat_prodi',
+          'surat_laak': 'surat_laak',
+        };
+
+        const redirectPage = redirectMap[templateType];
+        if (redirectPage) {
+          // Simpan ke localStorage untuk navigasi
+          localStorage.setItem('currentPage', redirectPage);
+          // Delay sedikit sebelum redirect untuk memastikan data tersimpan
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        }
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Gagal menyimpan template';
       setError(errorMessage);
@@ -134,8 +175,6 @@ const TemplateManagement = () => {
       template_name: template.template_name,
       template_type: template.template_type,
       description: template.description || '',
-      variables: Array.isArray(template.variables) ? JSON.stringify(template.variables, null, 2) : template.variables || '',
-      is_active: template.is_active,
     });
     setFile(null);
     setShowModal(true);
@@ -144,22 +183,146 @@ const TemplateManagement = () => {
   // Open create modal
   const handleCreate = () => {
     setEditingTemplate(null);
-    setFormData({ template_name: '', template_type: '', description: '', variables: '', is_active: true });
+    setFormData({ template_name: '', template_type: '', description: '' });
     setFile(null);
     setShowModal(true);
+  };
+
+  // Handle download template
+  const handleDownloadTemplate = async () => {
+    // Download template berdasarkan jenis yang dipilih
+    const templateType = formData.template_type;
+    if (!templateType) {
+      setError('Pilih jenis template terlebih dahulu');
+      return;
+    }
+
+    // Mapping jenis template ke nama file template dari folder templates
+    const templateMap: { [key: string]: string } = {
+      'surat_tugas': 'template_surat_tugas.docx',
+      'sppd': 'template_sppd.docx',
+      'surat_undangan': 'template_undangan.docx',
+      'surat_keterangan_aktif_kuliah': 'template_surat_keterangan_mahasiswa_aktif.docx',
+      'surat_keterangan_lulus': 'template_surat_keterangan_lulus.docx',
+      'surat_keterangan_kelakuan_baik': 'template_surat_keterangan_kelakuan_baik.docx',
+      'surat_keterangan_bebas_pinjaman': 'template_surat_keterangan_bebas_pinjaman.docx',
+      'surat_pengantar_A': 'template_pengantarpermohonan_A.docx',
+      'surat_pengantar_B': 'template_pengantarpermohonan_B.docx',
+      'surat_keterangan': 'template_surat_keterangan_mahasiswa_aktif.docx', // Default untuk surat_keterangan
+      'surat_pengantar': 'template_pengantarpermohonan_A.docx', // Default untuk surat_pengantar
+    };
+
+    const templateFileName = templateMap[templateType];
+    if (templateFileName) {
+      try {
+        setError(''); // Clear previous errors
+        
+        // Encode filename untuk URL
+        const encodedFilename = encodeURIComponent(templateFileName);
+        
+        console.log('[Download Template] Requesting:', `/dashboard/templates/download/${encodedFilename}`);
+        
+        // Download dari endpoint dashboard templates menggunakan api service
+        const response = await api.get(`/dashboard/templates/download/${encodedFilename}`, {
+          responseType: 'blob',
+        });
+        
+        console.log('[Download Template] Response received:', response.status, response.headers);
+        
+        // response.data sudah berupa blob dari axios
+        const blob = response.data;
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = templateFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(downloadUrl);
+        
+        console.log('[Download Template] Download triggered successfully');
+      } catch (err: any) {
+        console.error('[Download Template] Error details:', err);
+        console.error('[Download Template] Error response:', err.response);
+        
+        // Jika error response adalah blob (dari server), coba parse sebagai text
+        if (err.response?.data instanceof Blob) {
+          try {
+            const errorText = await err.response.data.text();
+            const errorJson = JSON.parse(errorText);
+            setError(errorJson.message || 'Gagal mengunduh template');
+          } catch (parseErr) {
+            setError('Gagal mengunduh template. File tidak ditemukan atau terjadi kesalahan server.');
+          }
+        } else {
+          const errorMessage = err.response?.data?.message || err.message || 'Gagal mengunduh template';
+          setError(errorMessage);
+        }
+      }
+    } else {
+      setError('Template untuk jenis ini belum tersedia');
+    }
+  };
+
+  // Get styling based on template type
+  const getTemplateTypeStyle = () => {
+    if (!formData.template_type) return {};
+    
+    const styleMap: { [key: string]: { borderColor: string; backgroundColor: string } } = {
+      // Surat Tugas & Perintah
+      'surat_tugas': { borderColor: colors.primary.main, backgroundColor: '#f0f9ff' },
+      'sppd': { borderColor: colors.primary.dark, backgroundColor: '#dbeafe' },
+      
+      // Surat Undangan
+      'surat_undangan': { borderColor: colors.semantic.warning, backgroundColor: '#fef3c7' },
+      
+      // Surat Keterangan
+      'surat_keterangan_aktif_kuliah': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
+      'surat_keterangan_lulus': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
+      'surat_keterangan_kelakuan_baik': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
+      'surat_keterangan_bebas_pinjaman': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
+      'surat_keterangan': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
+      
+      // Surat Pengantar
+      'surat_pengantar_A': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
+      'surat_pengantar_B': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
+      'surat_pengantar': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
+      
+      // Surat Lainnya
+      'surat_keputusan': { borderColor: '#8b5cf6', backgroundColor: '#ede9fe' },
+      'surat_prodi': { borderColor: '#ec4899', backgroundColor: '#fce7f3' },
+      'surat_laak': { borderColor: '#14b8a6', backgroundColor: '#ccfbf1' },
+    };
+
+    return styleMap[formData.template_type] || {};
   };
 
   // Get template type label
   const getTemplateTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
+      // Surat Tugas & Perintah
       surat_tugas: 'Surat Tugas',
+      sppd: 'SPPD',
+      
+      // Surat Undangan
       surat_undangan: 'Surat Undangan',
+      
+      // Surat Keterangan
+      surat_keterangan_aktif_kuliah: 'Surat Keterangan Aktif Kuliah',
+      surat_keterangan_lulus: 'Surat Keterangan Lulus',
+      surat_keterangan_kelakuan_baik: 'Surat Keterangan Kelakuan Baik',
+      surat_keterangan_bebas_pinjaman: 'Surat Keterangan Bebas Pinjaman',
       surat_keterangan: 'Surat Keterangan',
+      
+      // Surat Pengantar
+      surat_pengantar_A: 'Surat Pengantar A',
+      surat_pengantar_B: 'Surat Pengantar B',
       surat_pengantar: 'Surat Pengantar',
+      
+      // Surat Lainnya
       surat_keputusan: 'Surat Keputusan',
       surat_prodi: 'Surat Prodi',
       surat_laak: 'Surat LAAK',
-      sppd: 'SPPD',
     };
     return labels[type] || type;
   };
@@ -200,13 +363,19 @@ const TemplateManagement = () => {
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ borderColor: '#d1d5db' }}>
             <option value="">Semua Jenis</option>
             <option value="surat_tugas">Surat Tugas</option>
+            <option value="sppd">SPPD</option>
             <option value="surat_undangan">Surat Undangan</option>
+            <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
+            <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
+            <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
+            <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
             <option value="surat_keterangan">Surat Keterangan</option>
+            <option value="surat_pengantar_A">Surat Pengantar A</option>
+            <option value="surat_pengantar_B">Surat Pengantar B</option>
             <option value="surat_pengantar">Surat Pengantar</option>
             <option value="surat_keputusan">Surat Keputusan</option>
             <option value="surat_prodi">Surat Prodi</option>
             <option value="surat_laak">Surat LAAK</option>
-            <option value="sppd">SPPD</option>
           </select>
         </div>
       </div>
@@ -303,7 +472,7 @@ const TemplateManagement = () => {
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" style={getTemplateTypeStyle()}>
               <div>
                 <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
                   Nama Template *
@@ -313,7 +482,10 @@ const TemplateManagement = () => {
                   value={formData.template_name}
                   onChange={(e) => setFormData({ ...formData, template_name: e.target.value })}
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ borderColor: '#d1d5db' }}
+                  style={{ 
+                    borderColor: formData.template_type ? getTemplateTypeStyle().borderColor : '#d1d5db',
+                    backgroundColor: formData.template_type ? getTemplateTypeStyle().backgroundColor : 'white'
+                  }}
                   required
                 />
               </div>
@@ -325,19 +497,48 @@ const TemplateManagement = () => {
                   value={formData.template_type}
                   onChange={(e) => setFormData({ ...formData, template_type: e.target.value })}
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ borderColor: '#d1d5db' }}
+                  style={{ 
+                    borderColor: formData.template_type ? getTemplateTypeStyle().borderColor : '#d1d5db',
+                    backgroundColor: formData.template_type ? getTemplateTypeStyle().backgroundColor : 'white'
+                  }}
                   required
                 >
                   <option value="">Pilih Jenis</option>
+                  {/* Surat Tugas & Perintah */}
                   <option value="surat_tugas">Surat Tugas</option>
+                  <option value="sppd">SPPD (Surat Perintah Perjalanan Dinas)</option>
+                  
+                  {/* Surat Undangan */}
                   <option value="surat_undangan">Surat Undangan</option>
-                  <option value="surat_keterangan">Surat Keterangan</option>
-                  <option value="surat_pengantar">Surat Pengantar</option>
+                  
+                  {/* Surat Keterangan */}
+                  <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
+                  <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
+                  <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
+                  <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
+                  <option value="surat_keterangan">Surat Keterangan (Umum)</option>
+                  
+                  {/* Surat Pengantar */}
+                  <option value="surat_pengantar_A">Surat Pengantar A</option>
+                  <option value="surat_pengantar_B">Surat Pengantar B</option>
+                  <option value="surat_pengantar">Surat Pengantar (Umum)</option>
+                  
+                  {/* Surat Lainnya */}
                   <option value="surat_keputusan">Surat Keputusan</option>
                   <option value="surat_prodi">Surat Prodi</option>
                   <option value="surat_laak">Surat LAAK</option>
-                  <option value="sppd">SPPD</option>
                 </select>
+                {/* Button Unduh Template - muncul ketika nama dan jenis sudah diisi */}
+                {formData.template_name && formData.template_type && !editingTemplate && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="mt-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all hover:opacity-90"
+                    style={{ backgroundColor: colors.semantic.success, color: colors.neutral.white }}
+                  >
+                    📥 Unduh Template Contoh
+                  </button>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
@@ -369,31 +570,9 @@ const TemplateManagement = () => {
                   rows={3}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
-                  Variables (JSON Array)
-                </label>
-                <textarea
-                  value={formData.variables}
-                  onChange={(e) => setFormData({ ...formData, variables: e.target.value })}
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  style={{ borderColor: '#d1d5db' }}
-                  rows={4}
-                  placeholder='["nomor_surat", "tanggal", "nama"]'
-                />
-                <p className="text-xs mt-1" style={{ color: '#6b7280' }}>
-                  Masukkan array JSON dari variable yang digunakan di template
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="is_active" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="w-4 h-4" />
-                <label htmlFor="is_active" className="text-sm font-semibold" style={{ color: '#374151' }}>
-                  Aktif
-                </label>
-              </div>
               <div className="flex gap-2 pt-4">
                 <button type="submit" className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all hover:opacity-90" style={{ backgroundColor: colors.primary.main }}>
-                  {editingTemplate ? 'Update' : 'Simpan'}
+                  {editingTemplate ? 'Update' : 'Buat Template'}
                 </button>
                 <button
                   type="button"
