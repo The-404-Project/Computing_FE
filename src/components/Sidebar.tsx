@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { colors } from '../design-system/colors';
-import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, Building2, GraduationCap, Award, FileText } from 'lucide-react';
+import { LayoutDashboard, Archive, UserCog, ChevronRight, ChevronDown, Building2, GraduationCap, Award, FileText } from 'lucide-react';
 
 interface SidebarProps {
-  onLogout?: () => void;
   onBackToDashboard?: () => void;
   onOpenSuratPengantar?: () => void;
   onOpenSuratUndangan?: () => void;
@@ -19,7 +18,6 @@ interface SidebarProps {
 }
 
 const Sidebar = ({
-  onLogout,
   onBackToDashboard,
   onOpenSuratPengantar,
   onOpenSuratUndangan,
@@ -297,14 +295,6 @@ const Sidebar = ({
                 </div>
               </div>
             </nav>
-
-            {/* Logout Button - Sticky di bawah */}
-            <div className="mt-auto pt-4 border-t" style={{ borderColor: '#e5e7eb' }}>
-              <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white" style={{ backgroundColor: colors.primary.dark, color: '#ffffff' }}>
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Keluar</span>
-              </button>
-            </div>
           </div>
         )}
       </aside>
