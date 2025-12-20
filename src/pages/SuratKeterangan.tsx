@@ -136,10 +136,10 @@ export default function SuratKeterangan() {
       tahun_akademik: formData.tahunAkademik,
       status: statusMahasiswa,
       keperluan: formData.keterangan,
-      kota: "Depok",
+      kota: "Bandung",
       tanggal: formatDateID(new Date()),
-      nama_dekan: "Prof. Dr. Mirna Adriani, M.Sc.",
-      nip_dekan: "196512345678901234",
+      nama_user: "Prof. Dr. Mirna Adriani, M.Sc.",
+      role: "196512345678901234",
       jenis_surat: formData.jenisSurat,
     }
     fetch("http://localhost:4000/api/surat-keterangan/generate", {
