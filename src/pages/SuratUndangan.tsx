@@ -146,7 +146,7 @@ const SuratUndangan = () => {
                 name="nomorSurat"
                 value={formData.nomorSurat}
                 onChange={handleChange}
-                placeholder="Biarkan kosong untuk nomor otomatis..."
+                placeholder="Contoh: 005/UND/X/2025 (Biarkan kosong untuk Auto-Generate)"
                 className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all placeholder:text-gray-300"
               />
             </div>
