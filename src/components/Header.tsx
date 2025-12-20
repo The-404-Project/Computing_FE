@@ -25,9 +25,12 @@ const Header = ({ onBackToDashboard, activeMenuItem = 'dashboard' }: HeaderProps
           </button>
         )}
         {/* SIPENA Logo/Text - Clickable */}
-        <div onClick={onBackToDashboard} className="cursor-pointer transition-opacity hover:opacity-80">
-          <h1 className="text-2xl font-bold text-white">SIPENA</h1>
-          <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
+        <div onClick={onBackToDashboard} className="cursor-pointer transition-opacity hover:opacity-80 flex items-center gap-3">
+          <img src="/Logo Sipena.png" alt="Logo SIPENA" className="h-16 w-auto" />
+          <div>
+            <h1 className="text-2xl font-bold text-white">SIPENA</h1>
+            <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
+          </div>
         </div>
       </div>
       {/* User Info */}
