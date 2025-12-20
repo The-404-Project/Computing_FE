@@ -51,6 +51,7 @@ const Layout = ({
         {/* Sidebar Component */}
         <Sidebar
           onLogout={onLogout}
+          onBackToDashboard={onBackToDashboard}
           onOpenSuratPengantar={onOpenSuratPengantar}
           onOpenSuratTugas={onOpenSuratTugas}
           onOpenSuratUndangan={onOpenSuratUndangan}

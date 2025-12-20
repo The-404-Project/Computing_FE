@@ -4,6 +4,7 @@ import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, B
 
 interface SidebarProps {
   onLogout?: () => void;
+  onBackToDashboard?: () => void;
   onOpenSuratPengantar?: () => void;
   onOpenSuratUndangan?: () => void;
   onOpenSuratTugas?: () => void;
@@ -19,6 +20,7 @@ interface SidebarProps {
 
 const Sidebar = ({
   onLogout,
+  onBackToDashboard,
   onOpenSuratPengantar,
   onOpenSuratUndangan,
   onOpenSuratTugas,
@@ -113,6 +115,7 @@ const Sidebar = ({
               {/* Dashboard */}
               <div>
                 <button
+                  onClick={onBackToDashboard}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${activeMenuItem === 'dashboard' ? '' : 'hover:bg-white'}`}
                   style={{
                     backgroundColor: activeMenuItem === 'dashboard' ? '#d3d3d3' : 'transparent',
