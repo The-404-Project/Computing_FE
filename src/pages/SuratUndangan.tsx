@@ -12,7 +12,14 @@ interface FormData {
   agenda: string;
 }
 
+// Interface baru untuk tipe data penerima
+interface Recipient {
+  nama: string;
+  jabatan: string;
+}
+
 const SuratUndangan = () => {
+  // --- STATE FORM DATA UTAMA ---
   const [formData, setFormData] = useState<FormData>({
     jenis_surat: 'undangan_rapat',
     nomorSurat: '',
@@ -24,8 +31,10 @@ const SuratUndangan = () => {
     agenda: ''
   });
 
-  const [inputRecipient, setInputRecipient] = useState('');
-  const [recipients, setRecipients] = useState<string[]>([]);
+  // --- STATE KHUSUS PENERIMA (Updated) ---
+  const [inputNama, setInputNama] = useState('');       // Input Nama
+  const [inputJabatan, setInputJabatan] = useState(''); // Input Jabatan
+  const [recipients, setRecipients] = useState<Recipient[]>([]); // Array Object
 
   // State untuk melacak format mana yang sedang loading
   const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | null>(null);
@@ -34,10 +43,18 @@ const SuratUndangan = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // --- LOGIC TAMBAH PENERIMA ---
   const addRecipient = () => {
-    if (inputRecipient.trim()) {
-      setRecipients([...recipients, inputRecipient]);
-      setInputRecipient('');
+    if (inputNama.trim()) {
+      // Masukkan object nama & jabatan ke list
+      setRecipients([...recipients, { 
+        nama: inputNama, 
+        jabatan: inputJabatan // Bisa string kosong jika user tidak isi
+      }]);
+      
+      // Reset form input kecil
+      setInputNama('');
+      setInputJabatan('');
     }
   };
 
@@ -45,23 +62,23 @@ const SuratUndangan = () => {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
+  // --- LOGIC EXPORT ---
   const handleExport = async (format: 'docx' | 'pdf') => {
-    // ... validasi lain ...
-
     try {
       setLoadingFormat(format);
 
       const payload = {
         jenis_surat: formData.jenis_surat,
         nomorSurat: formData.nomorSurat,
-
-        perihal: formData.perihal,
+        perihal: formData.perihal, // Perihal ini nanti akan ditimpa/diabaikan backend sesuai logic baru
         lampiran: formData.lampiran,
         tanggalAcara: formData.tanggalAcara,
         waktuMulai: formData.waktuAcara,
         tempat: formData.lokasi,
         agenda: formData.agenda,
-        list_tamu: recipients.map(nama => ({ nama: nama }))
+        
+        // PENTING: Kirim array object recipients langsung (sudah berisi nama & jabatan)
+        list_tamu: recipients 
       };
 
       const endpoint = `http://localhost:4000/api/surat-undangan/create?format=${format}`;
@@ -109,7 +126,7 @@ const SuratUndangan = () => {
               Simpan Draft
             </button>
 
-            {/* Tombol PDF - Menggunakan Secondary Dark Tone */}
+            {/* Tombol PDF */}
             <button
               onClick={() => handleExport('pdf')}
               disabled={loadingFormat !== null}
@@ -118,7 +135,7 @@ const SuratUndangan = () => {
               {loadingFormat === 'pdf' ? <span className="animate-pulse">Processing...</span> : 'Export PDF'}
             </button>
 
-            {/* Tombol DOCX - Menggunakan Primary #B28D35 */}
+            {/* Tombol DOCX */}
             <button
               onClick={() => handleExport('docx')}
               disabled={loadingFormat !== null}
@@ -137,9 +154,10 @@ const SuratUndangan = () => {
               Detail Acara
             </h2>
 
+            {/* Area Nomor Surat */}
             <div className="md:col-span-2 md:grid-cols-2 gap-8 mb-8">
               <label className="block text-sm font-semibold text-[#6B5E54] mb-2">
-                Nomor Surat <span className="text-[#B28D35] text-xs font-normal italic">(Opsional - Kosongkan untuk Auto Generate)</span>
+                Nomor Surat <span className="text-[#B28D35] text-xs font-normal italic">(Opsional)</span>
               </label>
               <input
                 type="text"
@@ -149,6 +167,9 @@ const SuratUndangan = () => {
                 placeholder="Contoh: 005/UND/X/2025 (Biarkan kosong untuk Auto-Generate)"
                 className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all placeholder:text-gray-300"
               />
+              <p className="text-xs text-gray-400 mt-2 ml-1">
+                *Jika dikosongkan, sistem akan otomatis membuat nomor urut.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -220,15 +241,27 @@ const SuratUndangan = () => {
               Daftar Undangan
             </h2>
 
-            <div className="flex gap-3 mb-6">
-              <input
-                type="text"
-                value={inputRecipient}
-                onChange={(e) => setInputRecipient(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addRecipient()}
-                placeholder="Nama Lengkap & Jabatan..."
-                className="flex-1 border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
-              />
+            {/* INPUT NAMA & JABATAN (Updated Layout) */}
+            <div className="flex flex-col md:flex-row gap-3 mb-6 items-end">
+              <div className="flex-1 w-full">
+                <input
+                  type="text"
+                  value={inputNama}
+                  onChange={(e) => setInputNama(e.target.value)}
+                  placeholder="Nama Lengkap (Wajib)"
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
+                />
+              </div>
+              <div className="flex-1 w-full">
+                <input
+                  type="text"
+                  value={inputJabatan}
+                  onChange={(e) => setInputJabatan(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addRecipient()}
+                  placeholder="Jabatan (Opsional - Tekan Enter)"
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
+                />
+              </div>
               <button
                 onClick={addRecipient}
                 className="bg-[#B28D35] hover:bg-[#96762B] text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95"
@@ -237,6 +270,7 @@ const SuratUndangan = () => {
               </button>
             </div>
 
+            {/* LIST PENERIMA (Updated Display) */}
             <div className="bg-[#FDFBF7] rounded-2xl border border-[#F2EFE9] p-6 min-h-[150px]">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">List Penerima ({recipients.length})</p>
@@ -248,9 +282,15 @@ const SuratUndangan = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
-                  {recipients.map((name, idx) => (
+                  {recipients.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#E5DED5] shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                      <span className="text-[#4A3F35] font-medium">{name}</span>
+                      <div className="flex flex-col">
+                        <span className="text-[#4A3F35] font-bold text-lg">{item.nama}</span>
+                        {/* Jika jabatan ada, tampilkan. Jika tidak, sembunyikan */}
+                        {item.jabatan && (
+                           <span className="text-gray-400 text-sm italic">{item.jabatan}</span>
+                        )}
+                      </div>
                       <button
                         onClick={() => removeRecipient(idx)}
                         className="text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
@@ -262,6 +302,7 @@ const SuratUndangan = () => {
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </div>
