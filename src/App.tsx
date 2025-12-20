@@ -6,10 +6,15 @@ import SuratPengantarPermohonan from './pages/SuratPengantarPermohonan';
 import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
 import SuratKeputusanSuratEdaran from './pages/SuratKeputusanSuratEdaran';
+import SuratKeterangan from './pages/SuratKeterangan';
 import ComingSoon from './pages/ComingSoon';
+import ArsipSurat from './pages/ArsipSurat';
+import SuratLAAK from './pages/SuratLAAK';
+import TemplateManagement from './pages/TemplateManagement';
+import Layout from './components/Layout';
 
 // Define available application views/routes
-type Page = 'login' | 'register' | 'dashboard' | 'admin' | 'surat_pengantar' | 'surat_undangan' | 'surat_tugas' | 'surat_keterangan' | 'surat_keputusan' | 'surat_prodi' | 'surat_laak' | 'arsip_surat';
+type Page = 'login' | 'register' | 'dashboard' | 'admin' | 'template_management' | 'surat_pengantar' | 'surat_undangan' | 'surat_tugas' | 'surat_keterangan' | 'surat_keputusan' | 'surat_prodi' | 'surat_laak' | 'arsip_surat';
 
 /**
  * Component: App
@@ -77,130 +82,235 @@ function App() {
   const handleOpenSuratProdi = () => setCurrentPage('surat_prodi');
   const handleOpenSuratLaak = () => setCurrentPage('surat_laak');
   const handleOpenArsipSurat = () => setCurrentPage('arsip_surat');
+  const handleOpenTemplateManagement = () => setCurrentPage('template_management');
 
   // Render Admin Page
   if (currentPage === 'admin') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="admin"
+      >
         <AdminPage onBack={handleBackToDashboard} />
-      </div>
+      </Layout>
+    );
+  }
+
+  // Render: Template Management
+  if (currentPage === 'template_management') {
+    return (
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="template_management"
+      >
+        <TemplateManagement />
+      </Layout>
     );
   }
 
   // Render: Module 4 (Letter Generation) with Custom Layout
   if (currentPage === 'surat_pengantar') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_pengantar"
+      >
         <SuratPengantarPermohonan />
-      </div>
+      </Layout>
     );
   }
 
   // Render: Module 1 (Surat Tugas) with Custom Layout
   if (currentPage === 'surat_tugas') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_tugas"
+      >
         <SuratTugas />
-      </div>
+      </Layout>
     );
   }
 
   // Render: Module 2 (Surat Undangan) with Custom Layout
   if (currentPage === 'surat_undangan') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_undangan"
+      >
         <SuratUndangan />
-      </div>
+      </Layout>
     );
   }
 
   // Render: Module 3 (Surat Keterangan)
   if (currentPage === 'surat_keterangan') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
-        <ComingSoon title="Surat Keterangan" description="Modul Surat Keterangan sedang dalam pengembangan" onBack={handleBackToDashboard} />
-      </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_keterangan"
+      >
+        <SuratKeterangan />
+      </Layout>
     );
   }
 
   // Render: Module 5 (Surat Keputusan)
   if (currentPage === 'surat_keputusan') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_keputusan"
+      >
         <SuratKeputusanSuratEdaran />
-      </div>
+      </Layout>
     );
   }
 
   // Render: Module 6 (Surat Prodi)
   if (currentPage === 'surat_prodi') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_prodi"
+      >
         <ComingSoon title="Surat Program Studi" description="Modul Surat Program Studi sedang dalam pengembangan" onBack={handleBackToDashboard} />
-      </div>
+      </Layout>
     );
   }
 
   // Render: Module 7 (Surat LAAK)
   if (currentPage === 'surat_laak') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
-        <ComingSoon title="Surat LAAK (Akreditasi & Audit)" description="Modul Surat LAAK sedang dalam pengembangan" onBack={handleBackToDashboard} />
-      </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="surat_laak"
+      >
+        <SuratLAAK />
+      </Layout>
     );
   }
 
   // Render: Arsip Surat
   if (currentPage === 'arsip_surat') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b px-6 py-3 shadow-sm sticky top-0 z-50">
-          <button onClick={handleBackToDashboard} className="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-2 transition-colors">
-            ← Kembali ke Dashboard
-          </button>
-        </div>
-        <ComingSoon title="Arsip Surat" description="Fitur Arsip Surat sedang dalam pengembangan" onBack={handleBackToDashboard} />
-      </div>
+      <Layout
+        onLogout={handleLogout}
+        onBackToDashboard={handleBackToDashboard}
+        onOpenSuratPengantar={handleOpenSuratPengantar}
+        onOpenSuratTugas={handleOpenSuratTugas}
+        onOpenSuratUndangan={handleOpenSuratUndangan}
+        onOpenAdmin={handleOpenAdmin}
+        onOpenSuratKeterangan={handleOpenSuratKeterangan}
+        onOpenSuratKeputusan={handleOpenSuratKeputusan}
+        onOpenSuratProdi={handleOpenSuratProdi}
+        onOpenSuratLaak={handleOpenSuratLaak}
+        onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
+        activeMenuItem="arsip_surat"
+      >
+        <ArsipSurat />
+      </Layout>
     );
   }
 
@@ -218,6 +328,7 @@ function App() {
         onOpenSuratProdi={handleOpenSuratProdi}
         onOpenSuratLaak={handleOpenSuratLaak}
         onOpenArsipSurat={handleOpenArsipSurat}
+        onOpenTemplateManagement={handleOpenTemplateManagement}
       />
     );
   }

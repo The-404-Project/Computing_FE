@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { colors } from '../design-system/colors';
-import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, Building2, GraduationCap, Award } from 'lucide-react';
+import { LayoutDashboard, Archive, UserCog, LogOut, ChevronRight, ChevronDown, Building2, GraduationCap, Award, FileText } from 'lucide-react';
 
 interface SidebarProps {
   onLogout?: () => void;
@@ -13,6 +13,7 @@ interface SidebarProps {
   onOpenSuratProdi?: () => void;
   onOpenSuratLaak?: () => void;
   onOpenArsipSurat?: () => void;
+  onOpenTemplateManagement?: () => void;
   activeMenuItem?: string;
 }
 
@@ -27,6 +28,7 @@ const Sidebar = ({
   onOpenSuratProdi,
   onOpenSuratLaak,
   onOpenArsipSurat,
+  onOpenTemplateManagement,
   activeMenuItem = 'dashboard',
 }: SidebarProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -62,7 +64,7 @@ const Sidebar = ({
             height: '40px',
             backgroundColor: colors.primary.main,
             color: '#ffffff',
-            zIndex: 100,
+            zIndex: 40,
           }}
           aria-label="Tutup Sidebar"
         >
@@ -83,7 +85,7 @@ const Sidebar = ({
             height: '40px',
             backgroundColor: colors.primary.main,
             color: '#ffffff',
-            zIndex: 1000,
+            zIndex: 40,
             pointerEvents: 'auto',
           }}
           aria-label="Buka Sidebar"
@@ -137,19 +139,54 @@ const Sidebar = ({
                 </button>
                 {expandedMenus.suratFakultas && (
                   <div className="ml-4 mt-1 space-y-1 border-l-2 pl-2" style={{ borderColor: colors.primary.light }}>
-                    <button onClick={onOpenSuratTugas} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratTugas}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_tugas' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Tugas & Surat Perintah</span>
                     </button>
-                    <button onClick={onOpenSuratUndangan} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratUndangan}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_undangan' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Undangan</span>
                     </button>
-                    <button onClick={onOpenSuratKeterangan} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratKeterangan}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_keterangan' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Keterangan</span>
                     </button>
-                    <button onClick={onOpenSuratPengantar} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratPengantar}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_pengantar' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Pengantar & Permohonan</span>
                     </button>
-                    <button onClick={onOpenSuratKeputusan} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratKeputusan}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_keputusan' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Keputusan (SK) & Edaran</span>
                     </button>
                   </div>
@@ -171,7 +208,14 @@ const Sidebar = ({
                 </button>
                 {expandedMenus.suratProdi && (
                   <div className="ml-4 mt-1 space-y-1 border-l-2 pl-2" style={{ borderColor: colors.primary.light }}>
-                    <button onClick={onOpenSuratProdi} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratProdi}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_prodi' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat Program Studi</span>
                     </button>
                   </div>
@@ -193,7 +237,14 @@ const Sidebar = ({
                 </button>
                 {expandedMenus.suratLaak && (
                   <div className="ml-4 mt-1 space-y-1 border-l-2 pl-2" style={{ borderColor: colors.primary.light }}>
-                    <button onClick={onOpenSuratLaak} className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenSuratLaak}
+                      className="w-full px-3 py-2 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'surat_laak' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <span className="text-sm">Surat LAAK (Akreditasi & Audit)</span>
                     </button>
                   </div>
@@ -203,14 +254,41 @@ const Sidebar = ({
               {/* Management System */}
               <div className="pt-2 border-t" style={{ borderColor: '#e5e7eb' }}>
                 <div className="space-y-1">
-                  <button onClick={onOpenArsipSurat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                  <button
+                    onClick={onOpenArsipSurat}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white"
+                    style={{
+                      color: '#1f2937',
+                      backgroundColor: activeMenuItem === 'arsip_surat' ? '#d3d3d3' : 'transparent',
+                    }}
+                  >
                     <Archive className="w-5 h-5" style={{ color: colors.primary.main }} />
-                    <span className="font-medium">Arsip Surat</span>
+                    <span className="font-semibold text-sm">Arsip Surat</span>
                   </button>
                   {isAdmin && onOpenAdmin && (
-                    <button onClick={onOpenAdmin} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white" style={{ color: '#1f2937' }}>
+                    <button
+                      onClick={onOpenAdmin}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'admin' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
                       <UserCog className="w-5 h-5" style={{ color: colors.primary.main }} />
-                      <span className="font-medium">Manajemen User</span>
+                      <span className="font-semibold text-sm">Manajemen User</span>
+                    </button>
+                  )}
+                  {isAdmin && onOpenTemplateManagement && (
+                    <button
+                      onClick={onOpenTemplateManagement}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-white"
+                      style={{
+                        color: '#1f2937',
+                        backgroundColor: activeMenuItem === 'template_management' ? '#d3d3d3' : 'transparent',
+                      }}
+                    >
+                      <FileText className="w-5 h-5" style={{ color: colors.primary.main }} />
+                      <span className="font-semibold text-sm">Manajemen Template</span>
                     </button>
                   )}
                 </div>

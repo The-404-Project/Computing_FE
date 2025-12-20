@@ -1,5 +1,5 @@
 import { colors } from '../design-system/colors';
-import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 interface DashboardProps {
   onLogout?: () => void;
@@ -12,6 +12,7 @@ interface DashboardProps {
   onOpenSuratProdi?: () => void;
   onOpenSuratLaak?: () => void;
   onOpenArsipSurat?: () => void;
+  onOpenTemplateManagement?: () => void;
 }
 
 const Dashboard = ({ 
@@ -24,197 +25,159 @@ const Dashboard = ({
   onOpenSuratKeputusan, 
   onOpenSuratProdi, 
   onOpenSuratLaak, 
-  onOpenArsipSurat 
+  onOpenArsipSurat,
+  onOpenTemplateManagement 
 }: DashboardProps) => {
-  // Get user info from localStorage
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  const username = user?.username || 'user';
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.neutral.white }}>
-      {/* Header - Dark Grey */}
-      <header className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: colors.primary.dark }}>
-        <div className="flex items-center gap-4">
-          {/* Logo Placeholder */}
-          <div className="w-12 h-12 rounded" style={{ backgroundColor: colors.primary.medium }}></div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">SIPENA</h1>
-            <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
-          </div>
-        </div>
-        {/* User Info */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary.medium }}>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <span className="text-white font-medium">{username}</span>
-        </div>
-      </header>
-
-      {/* Main Content Area with Sidebar */}
-      <div className="flex flex-1 overflow-hidden relative" style={{ overflowX: 'hidden' }}>
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: colors.neutral.white }}>
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2" style={{ color: '#1f2937' }}>
-              Selamat Datang
-            </h2>
-            <p className="text-base" style={{ color: '#6b7280' }}>
-              Dashboard Sistem Pengelolaan Naskah Akademik
-            </p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Card 1: Total Surat */}
-            <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
-                  Total Surat
-                </h3>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
-                0
-              </p>
-            </div>
-
-            {/* Card 2: Surat Pending */}
-            <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
-                  Surat Pending
-                </h3>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.semantic.warning }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
-                0
-              </p>
-            </div>
-
-            {/* Card 3: Surat Selesai */}
-            <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
-                  Surat Selesai
-                </h3>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.semantic.success }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
-                0
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Actions - From HEAD */}
-          <div className="border rounded-lg p-4 sm:p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-            <h3 className="text-lg sm:text-xl font-bold mb-4" style={{ color: '#1f2937' }}>
-              Aksi Cepat
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              
-              <button 
-                  onClick={onOpenSuratUndangan}
-                  className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
-                  style={{ borderColor: '#e5e7eb' }}
-              >
-                <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
-                    Buat Surat Undangan
-                  </p>
-                  <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
-                    Buat surat undangan baru
-                  </p>
-                </div>
-              </button>
-
-              <button 
-                  onClick={onOpenSuratKeputusan}
-                  className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
-                  style={{ borderColor: '#e5e7eb' }}
-              >
-                <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
-                    Buat SK & SE
-                  </p>
-                  <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
-                    Buat Surat Keputusan / Edaran
-                  </p>
-                </div>
-              </button>
-
-              <button 
-                  onClick={onOpenSuratPengantar}
-                  className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
-                  style={{ borderColor: '#e5e7eb' }}
-              >
-                <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
-                    Buat Surat Pengantar
-                  </p>
-                  <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
-                    Buat surat pengantar baru
-                  </p>
-                </div>
-              </button>
-
-              <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
-                <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
-                    Lihat Semua Surat
-                  </p>
-                  <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
-                    Lihat daftar semua surat
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </main>
-
-        {/* Sidebar Component */}
-        <Sidebar
-          onLogout={onLogout}
-          onOpenSuratPengantar={onOpenSuratPengantar}
-          onOpenSuratTugas={onOpenSuratTugas}
-          onOpenSuratUndangan={onOpenSuratUndangan}
-          onOpenAdmin={onOpenAdmin}
-          onOpenSuratKeterangan={onOpenSuratKeterangan}
-          onOpenSuratKeputusan={onOpenSuratKeputusan}
-          onOpenSuratProdi={onOpenSuratProdi}
-          onOpenSuratLaak={onOpenSuratLaak}
-          onOpenArsipSurat={onOpenArsipSurat}
-          activeMenuItem="dashboard"
-        />
+    <Layout
+      onLogout={onLogout}
+      onOpenSuratPengantar={onOpenSuratPengantar}
+      onOpenSuratTugas={onOpenSuratTugas}
+      onOpenSuratUndangan={onOpenSuratUndangan}
+      onOpenAdmin={onOpenAdmin}
+      onOpenSuratKeterangan={onOpenSuratKeterangan}
+      onOpenSuratKeputusan={onOpenSuratKeputusan}
+      onOpenSuratProdi={onOpenSuratProdi}
+      onOpenSuratLaak={onOpenSuratLaak}
+      onOpenArsipSurat={onOpenArsipSurat}
+      onOpenTemplateManagement={onOpenTemplateManagement}
+      activeMenuItem="dashboard"
+    >
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold mb-2" style={{ color: '#1f2937' }}>
+          Selamat Datang
+        </h2>
+        <p className="text-base" style={{ color: '#6b7280' }}>
+          Dashboard Sistem Pengelolaan Naskah Akademik
+        </p>
       </div>
 
-      {/* Footer - Dark Grey, Sticky */}
-      <footer className="sticky bottom-0 px-6 py-4 text-center z-10" style={{ backgroundColor: colors.primary.dark }}>
-        <p className="text-sm text-white">© 2025 Fakultas Informatika, Telkom University</p>
-      </footer>
-    </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Card 1: Total Surat */}
+        <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
+              Total Surat
+            </h3>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
+            0
+          </p>
+        </div>
+
+        {/* Card 2: Surat Pending */}
+        <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
+              Surat Pending
+            </h3>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.semantic.warning }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
+            0
+          </p>
+        </div>
+
+        {/* Card 3: Surat Selesai */}
+        <div className="border rounded-lg p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold" style={{ color: '#6b7280' }}>
+              Surat Selesai
+            </h3>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.semantic.success }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-3xl font-bold" style={{ color: '#1f2937' }}>
+            0
+          </p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="border rounded-lg p-4 sm:p-6 shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
+        <h3 className="text-lg sm:text-xl font-bold mb-4" style={{ color: '#1f2937' }}>
+          Aksi Cepat
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <button 
+              onClick={onOpenSuratUndangan}
+              className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+              style={{ borderColor: '#e5e7eb' }}
+          >
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
+                Buat Surat Undangan
+              </p>
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+                Buat surat undangan baru
+              </p>
+            </div>
+          </button>
+
+          <button 
+              onClick={onOpenSuratKeputusan}
+              className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+              style={{ borderColor: '#e5e7eb' }}
+          >
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
+                Buat SK & SE
+              </p>
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+                Buat Surat Keputusan / Edaran
+              </p>
+            </div>
+          </button>
+
+          <button 
+              onClick={onOpenSuratPengantar}
+              className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" 
+              style={{ borderColor: '#e5e7eb' }}
+          >
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
+                Buat Surat Pengantar
+              </p>
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+                Buat surat pengantar baru
+              </p>
+            </div>
+          </button>
+
+          <button className="flex items-center gap-3 p-4 border rounded-lg transition-all hover:bg-gray-50 text-left" style={{ borderColor: '#e5e7eb' }}>
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.primary.main }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm sm:text-base" style={{ color: '#1f2937' }}>
+                Lihat Semua Surat
+              </p>
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+                Lihat daftar semua surat
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </Layout>
   );
 };
 
