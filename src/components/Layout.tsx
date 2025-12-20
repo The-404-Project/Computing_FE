@@ -39,7 +39,7 @@ const Layout = ({
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.neutral.white }}>
       {/* Header */}
-      <Header onBackToDashboard={onBackToDashboard} activeMenuItem={activeMenuItem} />
+      <Header onBackToDashboard={onBackToDashboard} onLogout={onLogout} activeMenuItem={activeMenuItem} />
 
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 overflow-hidden relative" style={{ overflowX: 'hidden' }}>
@@ -50,7 +50,7 @@ const Layout = ({
 
         {/* Sidebar Component */}
         <Sidebar
-          onLogout={onLogout}
+          onBackToDashboard={onBackToDashboard}
           onOpenSuratPengantar={onOpenSuratPengantar}
           onOpenSuratTugas={onOpenSuratTugas}
           onOpenSuratUndangan={onOpenSuratUndangan}

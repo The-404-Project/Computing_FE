@@ -17,24 +17,26 @@ interface FormData {
 
 export default function SuratKeterangan() {
   const [formData, setFormData] = useState<FormData>({
-    nim: "1234567890",
-    namaMahasiswa: "Budi Setiawan",
-    programStudi: "Teknik Informatika",
-    tahunAkademik: "2023/2024",
-    jenisSurat: "Surat Keterangan Aktif Kuliah",
-    keterangan: "Untuk keperluan pengajuan beasiswa Prestasi Gemilang 2024",
-    nomorRegistrasi: "SK-IF-2024-03-0123",
+    nim: "",
+    namaMahasiswa: "",
+    programStudi: "",
+    tahunAkademik: "",
+    jenisSurat: "",
+    keterangan: "",
+    nomorRegistrasi: "",
   })
 
   const [showDropdown, setShowDropdown] = useState(false)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
-  const [statusMahasiswa, setStatusMahasiswa] = useState("Aktif")
+  const [statusMahasiswa, setStatusMahasiswa] = useState("")
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [searchMessage, setSearchMessage] = useState<string | null>(null)
   const [generatedFile, setGeneratedFile] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [existingFile, setExistingFile] = useState<string | null>(null)
+  const [hasMahasiswaData, setHasMahasiswaData] = useState(false)
+  const [showSearchHint, setShowSearchHint] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -52,7 +54,14 @@ export default function SuratKeterangan() {
   const handleSearch = async () => {
     setLoadingSearch(true)
     setSearchMessage(null)
+    setShowSearchHint(false)
     try {
+      if (!formData.nim.trim()) {
+        setSearchMessage('Masukkan NIM terlebih dahulu')
+        setHasMahasiswaData(false)
+        setLoadingSearch(false)
+        return
+      }
       const res = await fetch(`http://localhost:4000/api/surat-keterangan/mahasiswa?nim=${encodeURIComponent(formData.nim)}`)
       if (!res.ok) {
         let msg = 'Data mahasiswa tidak ditemukan'
@@ -61,26 +70,47 @@ export default function SuratKeterangan() {
           if (body && body.message) msg = body.message
         } catch {}
         setSearchMessage(msg)
+        setHasMahasiswaData(false)
         setLoadingSearch(false)
         return
       }
       const data = await res.json()
+
+      let nextNomor = ""
+      try {
+        const resNum = await fetch("http://localhost:4000/api/surat-keterangan/next-number")
+        if (resNum.ok) {
+          const dataNum = await resNum.json()
+          nextNomor = dataNum.nextNumber
+        }
+      } catch (err) {
+        console.error("Error fetching next number:", err)
+      }
+
       setFormData((prev) => ({
         ...prev,
         namaMahasiswa: data.namaMahasiswa || prev.namaMahasiswa,
         programStudi: data.programStudi || prev.programStudi,
         tahunAkademik: data.tahunAkademik || prev.tahunAkademik,
+        nomorRegistrasi: nextNomor || prev.nomorRegistrasi,
       }))
       setStatusMahasiswa(data.status || statusMahasiswa)
       setSearchMessage('Data mahasiswa berhasil ditemukan.')
+      setHasMahasiswaData(true)
+      setShowSearchHint(false)
     } catch (e) {
       setSearchMessage('Terjadi kesalahan jaringan')
+      setHasMahasiswaData(false)
     } finally {
       setLoadingSearch(false)
     }
   }
 
   const handleGenerate = () => {
+    if (!hasMahasiswaData) {
+      setShowSearchHint(true)
+      return
+    }
     const formatDateID = (d: Date) => {
       const months = [
         "Januari",
@@ -106,10 +136,10 @@ export default function SuratKeterangan() {
       tahun_akademik: formData.tahunAkademik,
       status: statusMahasiswa,
       keperluan: formData.keterangan,
-      kota: "Depok",
+      kota: "Bandung",
       tanggal: formatDateID(new Date()),
-      nama_dekan: "Prof. Dr. Mirna Adriani, M.Sc.",
-      nip_dekan: "196512345678901234",
+      nama_user: "Prof. Dr. Mirna Adriani, M.Sc.",
+      role: "196512345678901234",
       jenis_surat: formData.jenisSurat,
     }
     fetch("http://localhost:4000/api/surat-keterangan/generate", {
@@ -223,79 +253,75 @@ export default function SuratKeterangan() {
               )}
             </div>
 
-            {/* Grid 2 Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nama Mahasiswa */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Nama Mahasiswa</label>
-                <input
-                  type="text"
-                  name="namaMahasiswa"
-                  value={formData.namaMahasiswa}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                  style={
-                    {
-                      backgroundColor: colors.primary.light,
-                      borderColor: colors.primary.light,
-                      "--tw-ring-color": colors.primary.main,
-                    } as React.CSSProperties
-                  }
-                  readOnly
-                />
+            {hasMahasiswaData ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Nama Mahasiswa</label>
+                  <input
+                    type="text"
+                    name="namaMahasiswa"
+                    value={formData.namaMahasiswa}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                    style={
+                      {
+                        backgroundColor: colors.primary.light,
+                        borderColor: colors.primary.light,
+                        "--tw-ring-color": colors.primary.main,
+                      } as React.CSSProperties
+                    }
+                    readOnly
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Program Studi</label>
+                  <input
+                    type="text"
+                    name="programStudi"
+                    value={formData.programStudi}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                    style={
+                      {
+                        backgroundColor: colors.primary.light,
+                        borderColor: colors.primary.light,
+                        "--tw-ring-color": colors.primary.main,
+                      } as React.CSSProperties
+                    }
+                    readOnly
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Tahun Akademik</label>
+                  <input
+                    type="text"
+                    name="tahunAkademik"
+                    value={formData.tahunAkademik}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                    style={
+                      {
+                        backgroundColor: colors.primary.light,
+                        borderColor: colors.primary.light,
+                        "--tw-ring-color": colors.primary.main,
+                      } as React.CSSProperties
+                    }
+                    readOnly
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Status Mahasiswa</label>
+                  <span
+                    className="inline-block px-3 py-1 text-sm font-medium rounded-full"
+                    style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
+                  >
+                    {statusMahasiswa}
+                  </span>
+                </div>
               </div>
-
-              {/* Program Studi */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Program Studi</label>
-                <input
-                  type="text"
-                  name="programStudi"
-                  value={formData.programStudi}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                  style={
-                    {
-                      backgroundColor: colors.primary.light,
-                      borderColor: colors.primary.light,
-                      "--tw-ring-color": colors.primary.main,
-                    } as React.CSSProperties
-                  }
-                  readOnly
-                />
-              </div>
-
-              {/* Tahun Akademik */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Tahun Akademik</label>
-                <input
-                  type="text"
-                  name="tahunAkademik"
-                  value={formData.tahunAkademik}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                  style={
-                    {
-                      backgroundColor: colors.primary.light,
-                      borderColor: colors.primary.light,
-                      "--tw-ring-color": colors.primary.main,
-                    } as React.CSSProperties
-                  }
-                  readOnly
-                />
-              </div>
-
-              {/* Status Mahasiswa */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Status Mahasiswa</label>
-                <span
-                  className="inline-block px-3 py-1 text-sm font-medium rounded-full"
-                  style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
-                >
-                  {statusMahasiswa}
-                </span>
-              </div>
-            </div>
+            ) : (showSearchHint ? (
+              <p className="text-sm" style={{ color: colors.semantic.error }}>Silakan cari NIM terlebih dahulu</p>
+            ) : null)}
           </div>
 
           {/* Detail Surat Section */}
@@ -318,7 +344,9 @@ export default function SuratKeterangan() {
                     } as React.CSSProperties
                   }
                 >
-                  <span>{formData.jenisSurat}</span>
+                  <span className={!formData.jenisSurat ? "text-gray-400" : "text-gray-900"}>
+                    {formData.jenisSurat || "Pilih jenis surat"}
+                  </span>
                   <ChevronDown className="w-5 h-5 text-gray-400" />
                 </button>
                 {showDropdown && (

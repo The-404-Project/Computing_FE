@@ -255,8 +255,8 @@ const AdminPage = ({ onBack }: AdminPageProps) => {
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl border" style={{ borderColor: '#e5e7eb' }}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold" style={{ color: '#1f2937' }}>
-                {editingUser ? 'Edit User' : 'Tambah User Baru'}
-              </h2>
+              {editingUser ? 'Edit User' : 'Tambah User Baru'}
+            </h2>
               <button
                 onClick={() => {
                   setShowModal(false);
