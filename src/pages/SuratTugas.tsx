@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import api from '../services/api';
 
 // --- Interface Data ---
 interface FormData {
@@ -15,6 +16,13 @@ interface FormData {
   tanggalSelesai: string;
   biaya: string;
   kendaraan: string;    
+}
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
 }
 
 const SuratTugas = () => {
@@ -36,6 +44,27 @@ const SuratTugas = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Fetch templates dari database
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        // Ambil template untuk surat_tugas dan sppd
+        const response = await api.get('/dashboard/templates/by-type/surat_tugas');
+        setTemplates(response.data.templates || []);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+        // Tetap lanjutkan meskipun error, gunakan template default
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   // --- Handlers ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -239,11 +268,29 @@ const SuratTugas = () => {
                   value={formData.jenis_surat}
                   onChange={handleChange}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                  disabled={loadingTemplates}
                 >
+                  {/* Template Default (selalu ada) */}
                   <option value="surat_tugas_dosen">Surat Tugas Dosen</option>
                   <option value="surat_tugas_staf">Surat Tugas Staf</option>
                   <option value="sppd">Surat Perintah Perjalanan Dinas (SPPD)</option>
+                  
+                  {/* Template dari Database */}
+                  {templates.length > 0 && (
+                    <>
+                      <optgroup label="Template Kustom">
+                        {templates.map((template) => (
+                          <option key={template.template_id} value={`template_${template.template_id}`}>
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
+                {loadingTemplates && (
+                  <p className="text-xs text-gray-400 mt-1">Memuat template...</p>
+                )}
               </InputGroup>
               {/* Kolom Tanda Tangan sudah DIHAPUS sesuai request */}
             </div>
