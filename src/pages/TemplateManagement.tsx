@@ -92,50 +92,12 @@ const TemplateManagement = () => {
           },
         });
 
-        // Redirect ke halaman sesuai jenis template
-        setShowModal(false);
-        setEditingTemplate(null);
+        // Template berhasil dibuat, tetap di halaman ini
+      setShowModal(false);
+      setEditingTemplate(null);
         setFormData({ template_name: '', template_type: '', description: '' });
-        setFile(null);
-        fetchTemplates();
-
-        // Redirect berdasarkan jenis template setelah delay singkat
-        const templateType = formData.template_type;
-        const redirectMap: { [key: string]: string } = {
-          // Surat Tugas & Perintah
-          'surat_tugas': 'surat_tugas',
-          'sppd': 'surat_tugas', // SPPD redirect ke surat tugas
-          
-          // Surat Undangan
-          'surat_undangan': 'surat_undangan',
-          
-          // Surat Keterangan
-          'surat_keterangan_aktif_kuliah': 'surat_keterangan',
-          'surat_keterangan_lulus': 'surat_keterangan',
-          'surat_keterangan_kelakuan_baik': 'surat_keterangan',
-          'surat_keterangan_bebas_pinjaman': 'surat_keterangan',
-          'surat_keterangan': 'surat_keterangan',
-          
-          // Surat Pengantar
-          'surat_pengantar_A': 'surat_pengantar',
-          'surat_pengantar_B': 'surat_pengantar',
-          'surat_pengantar': 'surat_pengantar',
-          
-          // Surat Lainnya
-          'surat_keputusan': 'surat_keputusan',
-          'surat_prodi': 'surat_prodi',
-          'surat_laak': 'surat_laak',
-        };
-
-        const redirectPage = redirectMap[templateType];
-        if (redirectPage) {
-          // Simpan ke localStorage untuk navigasi
-          localStorage.setItem('currentPage', redirectPage);
-          // Delay sedikit sebelum redirect untuk memastikan data tersimpan
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        }
+      setFile(null);
+      fetchTemplates();
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Gagal menyimpan template';
@@ -322,13 +284,18 @@ const TemplateManagement = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="border rounded-lg p-4 mb-6" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-        <div>
-          <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
-            Filter Jenis Template
-          </label>
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ borderColor: '#d1d5db' }}>
+      {/* Compact Filter - Dropdown di samping */}
+      <div className="mb-6 flex items-center gap-4">
+        <label className="text-sm font-semibold whitespace-nowrap" style={{ color: '#374151' }}>
+          Filter Jenis Template:
+        </label>
+        <div className="relative flex-1 max-w-xs">
+          <select 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value)} 
+            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-8" 
+            style={{ borderColor: '#d1d5db' }}
+          >
             <option value="">Semua Jenis</option>
             <option value="surat_tugas">Surat Tugas</option>
             <option value="sppd">SPPD</option>
@@ -345,6 +312,11 @@ const TemplateManagement = () => {
             <option value="surat_prodi">Surat Prodi</option>
             <option value="surat_laak">Surat LAAK</option>
           </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
 
