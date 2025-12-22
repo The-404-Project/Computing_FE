@@ -50,6 +50,56 @@ export default function SuratKeterangan() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
 
+  // KEY UNTUK LOCAL STORAGE
+  const DRAFT_KEY = 'surat_keterangan_draft_v1';
+
+  // State Penanda Draft
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false); // Notifikasi "Draft Dipulihkan"
+  const [isSystemReady, setIsSystemReady] = useState(false); // Penanda siap auto-save
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // --- 1. LOGIC LOAD DRAFT (Saat Halaman Dibuka) ---
+  useEffect(() => {
+    const savedData = localStorage.getItem(DRAFT_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) {
+           setFormData((prev) => ({
+             ...prev,
+             ...parsed.formData
+           }));
+        }
+
+        setIsDraftLoaded(true);
+        setTimeout(() => setIsDraftLoaded(false), 3000);
+      } catch (e) {
+        console.error('Gagal load draft lokal', e);
+      }
+    }
+    // Tandai sistem siap
+    setIsSystemReady(true);
+  }, []);
+
+  // --- 2. LOGIC AUTO-SAVE + NOTIFIKASI ---
+  useEffect(() => {
+    if (!isSystemReady) return;
+
+    // 1. Ubah status jadi "Menyimpan..." saat ada perubahan
+    setSaveStatus('saving');
+
+    // 2. Gunakan Timer (Debounce) agar tidak spam simpan setiap ketik satu huruf
+    const timer = setTimeout(() => {
+      const objectToSave = { formData };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
+
+      // 3. Ubah status jadi "Tersimpan"
+      setSaveStatus('saved');
+    }, 1000); // Delay 1 detik setelah user berhenti mengetik
+
+    return () => clearTimeout(timer);
+  }, [formData, isSystemReady]);
+
   // Fetch templates kustom untuk surat keterangan
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -201,6 +251,10 @@ export default function SuratKeterangan() {
             document.body.removeChild(a)
           }
           
+          // Hapus Draft & Reset Status Simpan
+          localStorage.removeItem(DRAFT_KEY);
+          setSaveStatus('idle');
+
           setShowSuccessPopup(false)
         })
         .catch((err) => {
@@ -234,6 +288,18 @@ export default function SuratKeterangan() {
           <h1 className="text-3xl font-bold" style={{ color: colors.primary.main }}>
             Formulir Surat Keterangan
           </h1>
+          <div className="flex items-center gap-3 mt-2">
+             {/* Notifikasi Draft Dipulihkan */}
+             {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold shadow-sm border border-blue-200">✨ Draft lama dipulihkan</span>}
+
+             {/* Indikator Status Simpan (Real-time) */}
+             {saveStatus === 'saving' && (
+               <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium flex items-center gap-1 transition-all">
+                 <span className="animate-spin">⏳</span> Menyimpan...
+               </span>
+             )}
+             {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all">✅ Draft Tersimpan</span>}
+          </div>
         </div>
 
         {/* Content */}
