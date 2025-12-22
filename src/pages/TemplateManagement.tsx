@@ -265,38 +265,6 @@ const TemplateManagement = () => {
   };
 
   // Get styling based on template type
-  const getTemplateTypeStyle = () => {
-    if (!formData.template_type) return {};
-    
-    const styleMap: { [key: string]: { borderColor: string; backgroundColor: string } } = {
-      // Surat Tugas & Perintah
-      'surat_tugas': { borderColor: colors.primary.main, backgroundColor: '#f0f9ff' },
-      'sppd': { borderColor: colors.primary.dark, backgroundColor: '#dbeafe' },
-      
-      // Surat Undangan
-      'surat_undangan': { borderColor: colors.semantic.warning, backgroundColor: '#fef3c7' },
-      
-      // Surat Keterangan
-      'surat_keterangan_aktif_kuliah': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
-      'surat_keterangan_lulus': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
-      'surat_keterangan_kelakuan_baik': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
-      'surat_keterangan_bebas_pinjaman': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
-      'surat_keterangan': { borderColor: colors.semantic.success, backgroundColor: '#d1fae5' },
-      
-      // Surat Pengantar
-      'surat_pengantar_A': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
-      'surat_pengantar_B': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
-      'surat_pengantar': { borderColor: colors.primary.medium, backgroundColor: '#e0e7ff' },
-      
-      // Surat Lainnya
-      'surat_keputusan': { borderColor: '#8b5cf6', backgroundColor: '#ede9fe' },
-      'surat_prodi': { borderColor: '#ec4899', backgroundColor: '#fce7f3' },
-      'surat_laak': { borderColor: '#14b8a6', backgroundColor: '#ccfbf1' },
-    };
-
-    return styleMap[formData.template_type] || {};
-  };
-
   // Get template type label
   const getTemplateTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
@@ -472,7 +440,7 @@ const TemplateManagement = () => {
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4" style={getTemplateTypeStyle()}>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
                   Nama Template *
@@ -483,8 +451,8 @@ const TemplateManagement = () => {
                   onChange={(e) => setFormData({ ...formData, template_name: e.target.value })}
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{ 
-                    borderColor: formData.template_type ? getTemplateTypeStyle().borderColor : '#d1d5db',
-                    backgroundColor: formData.template_type ? getTemplateTypeStyle().backgroundColor : 'white'
+                    borderColor: '#d1d5db',
+                    backgroundColor: 'white'
                   }}
                   required
                 />
@@ -498,8 +466,8 @@ const TemplateManagement = () => {
                   onChange={(e) => setFormData({ ...formData, template_type: e.target.value })}
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{ 
-                    borderColor: formData.template_type ? getTemplateTypeStyle().borderColor : '#d1d5db',
-                    backgroundColor: formData.template_type ? getTemplateTypeStyle().backgroundColor : 'white'
+                    borderColor: '#d1d5db',
+                    backgroundColor: 'white'
                   }}
                   required
                 >
