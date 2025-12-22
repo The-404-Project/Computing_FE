@@ -1,5 +1,6 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { colors } from '../design-system/colors';
+import api from '../services/api';
 
 // --- Types & Interfaces ---
 
@@ -27,6 +28,13 @@ interface FormData {
   perihal: string;
   alamatTujuan: string;
   tembusan: string;
+}
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
 }
 
 /**
@@ -60,6 +68,27 @@ const SuratPengantarPermohonan = () => {
   // UI States
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Fetch templates kustom untuk surat pengantar
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_pengantar');
+        setTemplates(response.data.templates || []);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   /**
    * Effect: Auto-Populate Template Content
@@ -292,6 +321,19 @@ const SuratPengantarPermohonan = () => {
                 <option value="pengantar_penelitian">Surat Pengantar Penelitian</option>
                 <option value="permohonan_izin_kegiatan">Surat Izin Kegiatan</option>
                 <option value="permohonan_kerjasama">Surat Permohonan Kerjasama</option>
+                
+                {/* Template Kustom dari Database */}
+                {templates.length > 0 && (
+                  <>
+                    <optgroup label="Template Kustom">
+                      {templates.map((template) => (
+                        <option key={template.template_id} value={`template_${template.template_id}`}>
+                          {template.template_name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </>
+                )}
               </TextField>
 
               <TextField

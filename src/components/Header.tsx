@@ -50,8 +50,8 @@ const Header = ({ onBackToDashboard, onLogout, activeMenuItem = 'dashboard' }: H
         <div onClick={onBackToDashboard} className="cursor-pointer transition-opacity hover:opacity-80 flex items-center gap-3">
           <img src="/Logo Sipena.png" alt="Logo SIPENA" className="h-16 w-auto" />
           <div>
-            <h1 className="text-2xl font-bold text-white">SIPENA</h1>
-            <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
+          <h1 className="text-2xl font-bold text-white">SIPENA</h1>
+          <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
           </div>
         </div>
       </div>
@@ -63,11 +63,11 @@ const Header = ({ onBackToDashboard, onLogout, activeMenuItem = 'dashboard' }: H
           style={{ backgroundColor: colors.primary.medium }}
         >
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary.dark }}>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <span className="text-white font-medium">{username}</span>
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <span className="text-white font-medium">{username}</span>
           <ChevronDown className={`w-4 h-4 text-white transition-transform ${showLogoutMenu ? 'rotate-180' : ''}`} />
         </button>
 

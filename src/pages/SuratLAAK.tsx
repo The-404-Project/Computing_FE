@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import api from '../services/api';
 
 interface KriteriaRow {
   kriteria: string;
@@ -25,6 +26,13 @@ interface FormData {
 }
 
 type ExportFormat = 'pdf' | 'docx';
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
+}
 
 const romanMonths = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
 const pad = (n: number, len = 3) => String(n).padStart(len, '0');
@@ -60,6 +68,27 @@ const SuratLAAK = () => {
 
   // Chart placeholder
   const [showChart, setShowChart] = useState(false);
+
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Fetch templates kustom untuk surat LAAK
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_laak');
+        setTemplates(response.data.templates || []);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   // Handlers
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -191,12 +220,29 @@ const SuratLAAK = () => {
                   value={formData.jenisSurat}
                   onChange={handleChange}
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none bg-[#FDFBF7]/50 transition-all cursor-pointer"
+                  disabled={loadingTemplates}
                 >
                   <option>Surat Permohonan Akreditasi</option>
                   <option>Laporan Audit Internal</option>
                   <option>Surat Tindak Lanjut Audit</option>
                   <option>Berita Acara Visitasi</option>
+                  
+                  {/* Template Kustom dari Database */}
+                  {templates.length > 0 && (
+                    <>
+                      <optgroup label="Template Kustom">
+                        {templates.map((template) => (
+                          <option key={template.template_id} value={`template_${template.template_id}`}>
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
+                {loadingTemplates && (
+                  <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>
+                )}
               </div>
 
               <div>

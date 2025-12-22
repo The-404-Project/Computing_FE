@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronDown, FileText, Download, Eye, X } from "lucide-react"
 import { colors } from "../design-system"
 import api from "../services/api"
@@ -14,6 +14,13 @@ interface FormData {
   jenisSurat: string
   keterangan: string
   nomorRegistrasi: string
+}
+
+interface Template {
+  template_id: number
+  template_name: string
+  template_type: string
+  file_path: string
 }
 
 export default function SuratKeterangan() {
@@ -38,6 +45,27 @@ export default function SuratKeterangan() {
   const [existingFile, setExistingFile] = useState<string | null>(null)
   const [hasMahasiswaData, setHasMahasiswaData] = useState(false)
   const [showSearchHint, setShowSearchHint] = useState(false)
+
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+
+  // Fetch templates kustom untuk surat keterangan
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true)
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_keterangan')
+        setTemplates(response.data.templates || [])
+      } catch (err) {
+        console.error('Error fetching templates:', err)
+      } finally {
+        setLoadingTemplates(false)
+      }
+    }
+
+    fetchTemplates()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -392,7 +420,32 @@ export default function SuratKeterangan() {
                     >
                       Surat Keterangan Kelakuan Baik
                     </button>
+                    
+                    {/* Template Kustom dari Database */}
+                    {templates.length > 0 && (
+                      <>
+                        <div className="border-t my-1" style={{ borderColor: colors.primary.light }}></div>
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                          Template Kustom
+                        </div>
+                        {templates.map((template) => (
+                          <button
+                            key={template.template_id}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, jenisSurat: `template_${template.template_id}` }))
+                              setShowDropdown(false)
+                            }}
+                          >
+                            {template.template_name}
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </div>
+                )}
+                {loadingTemplates && (
+                  <p className="text-xs text-gray-400 mt-1">Memuat template...</p>
                 )}
               </div>
             </div>
