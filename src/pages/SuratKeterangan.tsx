@@ -110,79 +110,84 @@ export default function SuratKeterangan() {
       setShowSearchHint(true)
       return
     }
-    const formatDateID = (d: Date) => {
-      const months = [
-        "Januari",
-        "Februari",
-        "Maret",
-        "April",
-        "Mei",
-        "Juni",
-        "Juli",
-        "Agustus",
-        "September",
-        "Oktober",
-        "November",
-        "Desember",
-      ]
-      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
-    }
-    const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
-    let currentUserName = ""
-    let currentUserRole = ""
-    if (userRaw) {
-      try {
-        const u = JSON.parse(userRaw)
-        currentUserName = u.fullName || u.username || ""
-        currentUserRole = u.role || ""
-      } catch {}
-    }
-
-    const payload = {
-      nomor_surat: formData.nomorRegistrasi,
-      nama: formData.namaMahasiswa,
-      nim: formData.nim,
-      program_studi: formData.programStudi,
-      tahun_akademik: formData.tahunAkademik,
-      status: statusMahasiswa,
-      keperluan: formData.keterangan,
-      kota: "Bandung",
-      tanggal: formatDateID(new Date()),
-      nama_user: currentUserName,
-      role: currentUserRole,
-      jenis_surat: formData.jenisSurat,
-    }
-    api.post("/surat-keterangan/generate", payload)
-      .then(async (res) => {
-        const data: any = res.data || {}
-        setGeneratedFile(data.file || null)
-        setExistingFile(null)
-        setShowErrorPopup(false)
-        setShowSuccessPopup(true)
-      })
-      .catch((err) => {
-        const status = err?.response?.status
-        const data = err?.response?.data || {}
-        const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
-        setGeneratedFile(null)
-        setExistingFile(data && data.file ? String(data.file) : null)
-        setShowSuccessPopup(false)
-        setErrorMessage(msg)
-        setShowErrorPopup(true)
-      })
+    setShowSuccessPopup(true)
   }
 
   const handleExport = (format: "docx" | "pdf") => {
-    if (format === "docx" && generatedFile) {
-      const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(generatedFile)}`
-      const a = document.createElement("a")
-      a.href = url
-      a.download = generatedFile
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+    if (format === "docx") {
+      const formatDateID = (d: Date) => {
+        const months = [
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
+        ]
+        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+      }
+      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
+      let currentUserName = ""
+      let currentUserRole = ""
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw)
+          currentUserName = u.fullName || u.username || ""
+          currentUserRole = u.role || ""
+        } catch {}
+      }
+  
+      const payload = {
+        nomor_surat: formData.nomorRegistrasi,
+        nama: formData.namaMahasiswa,
+        nim: formData.nim,
+        program_studi: formData.programStudi,
+        tahun_akademik: formData.tahunAkademik,
+        status: statusMahasiswa,
+        keperluan: formData.keterangan,
+        kota: "Bandung",
+        tanggal: formatDateID(new Date()),
+        nama_user: currentUserName,
+        role: currentUserRole,
+        jenis_surat: formData.jenisSurat,
+      }
+
+      api.post("/surat-keterangan/generate", payload)
+        .then(async (res) => {
+          const data: any = res.data || {}
+          const fileName = data.file
+          
+          if (fileName) {
+            const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(fileName)}`
+            const a = document.createElement("a")
+            a.href = url
+            a.download = fileName
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+          }
+          
+          setShowSuccessPopup(false)
+        })
+        .catch((err) => {
+          const status = err?.response?.status
+          const data = err?.response?.data || {}
+          const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
+          setGeneratedFile(null)
+          setExistingFile(data && data.file ? String(data.file) : null)
+          setShowSuccessPopup(false)
+          setErrorMessage(msg)
+          setShowErrorPopup(true)
+        })
+    } else {
+      setShowSuccessPopup(false)
     }
-    setShowSuccessPopup(false)
   }
 
   return (
@@ -466,21 +471,16 @@ export default function SuratKeterangan() {
             {/* Success icon and message */}
             <div className="text-center space-y-4">
               <div
-                className="w-16 h-16 rounded-full mx-auto flex items-center justify-center sipena-check-bounce"
-                style={{ backgroundColor: `${colors.semantic.success}20` }}
+                className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
+                style={{ backgroundColor: `${colors.primary.main}20` }}
               >
-                <svg
+                <FileText
                   className="w-8 h-8"
-                  style={{ color: colors.semantic.success }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path className="sipena-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                  style={{ color: colors.primary.main }}
+                />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800">Dokumen Berhasil Dibuat</h3>
-              <p className="text-gray-600 text-sm">Silakan pilih format export yang Anda inginkan</p>
+              <h3 className="text-xl font-semibold text-gray-800">Pilih Format Dokumen</h3>
+              <p className="text-gray-600 text-sm">Dokumen akan dibuat dan diunduh sesuai format yang dipilih</p>
             </div>
 
             {/* Export buttons */}
