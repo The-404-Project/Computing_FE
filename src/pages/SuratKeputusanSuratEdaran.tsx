@@ -26,13 +26,6 @@ interface Approver {
   name: string;
 }
 
-interface VersionEntry {
-  id: string;
-  name: string;
-  createdAt: string;
-  status: string;
-}
-
 interface DocTypeOption {
   value: DocType;
   label: string;
@@ -48,11 +41,13 @@ interface Template {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+const DRAFT_KEY = 'surat_keputusan_draft_v1';
+
 const TEMPLATE_MAP: Record<DocType, string> = {
   SK_DEKAN: 'template_surat_keputusan_dekan.docx',
   SK_PANITIA: 'template_surat_keputusan_panitia.docx',
-  SE_AKADEMIK: 'template_surat_keputusan_dekan.docx',
-  SE_UMUM: 'template_surat_keputusan_dekan.docx',
+  SE_AKADEMIK: 'template_surat_edaran_akademik.docx',
+  SE_UMUM: 'template_surat_edaran_umum.docx',
 };
 
 const PASAL_LABELS = [
@@ -267,6 +262,16 @@ export default function SuratKeputusanSuratEdaran() {
   const [isLoadingExport, setIsLoadingExport] = useState(false);
   const [exportError, setExportError] = useState('');
 
+  // Preview State
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Auto-Save State
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [isSystemReady, setIsSystemReady] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
   // Form State
   const [docType, setDocType] = useState<DocType>('SK_DEKAN');
   const [perihal, setPerihal] = useState('');
@@ -282,17 +287,11 @@ export default function SuratKeputusanSuratEdaran() {
   ]);
   const [approvers, setApprovers] = useState<Approver[]>([{ id: 1, role: 'Dekan', name: '' }]);
 
-  // Version State
-  const [saveVersionName, setSaveVersionName] = useState('');
-  const [versions, setVersions] = useState<VersionEntry[]>([]);
-  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
-  const [versionSearch, setVersionSearch] = useState('');
-
   // State untuk template kustom
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-  // Fetch templates kustom untuk surat keputusan
+  // Fetch templates kustom
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
@@ -309,6 +308,62 @@ export default function SuratKeputusanSuratEdaran() {
     fetchTemplates();
   }, []);
 
+  // --- 1. LOGIC LOAD DRAFT (Saat Halaman Dibuka) ---
+  useEffect(() => {
+    const savedData = localStorage.getItem(DRAFT_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.docType) setDocType(parsed.docType);
+        if (parsed.perihal) setPerihal(parsed.perihal);
+        if (parsed.nomorSurat) setNomorSurat(parsed.nomorSurat);
+        if (parsed.tempat) setTempat(parsed.tempat);
+        if (parsed.tanggalPenetapan) setTanggalPenetapan(parsed.tanggalPenetapan);
+        if (parsed.menimbang) setMenimbang(parsed.menimbang);
+        if (parsed.mengingat) setMengingat(parsed.mengingat);
+        if (parsed.memperhatikan) setMemperhatikan(parsed.memperhatikan);
+        if (parsed.menetapkan) setMenetapkan(parsed.menetapkan);
+        if (parsed.pasal) setPasal(parsed.pasal);
+        if (parsed.approvers) setApprovers(parsed.approvers);
+
+        setIsDraftLoaded(true);
+        setTimeout(() => setIsDraftLoaded(false), 3000);
+      } catch (e) {
+        console.error('Gagal load draft lokal', e);
+      }
+    }
+    // Tandai sistem siap
+    setIsSystemReady(true);
+  }, []);
+
+  // --- 2. LOGIC AUTO-SAVE + NOTIFIKASI ---
+  useEffect(() => {
+    if (!isSystemReady) return;
+
+    setSaveStatus('saving');
+
+    const timer = setTimeout(() => {
+      const objectToSave = {
+        docType,
+        perihal,
+        nomorSurat,
+        tempat,
+        tanggalPenetapan,
+        menimbang,
+        mengingat,
+        memperhatikan,
+        menetapkan,
+        pasal,
+        approvers
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
+      setSaveStatus('saved');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [docType, perihal, nomorSurat, tempat, tanggalPenetapan, menimbang, mengingat, memperhatikan, menetapkan, pasal, approvers, isSystemReady]);
+
+
   // Effects
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -321,28 +376,13 @@ export default function SuratKeputusanSuratEdaran() {
   }, []);
 
   useEffect(() => {
-    setDocType(activeTab === 'SK' ? 'SK_DEKAN' : 'SE_UMUM');
-  }, [activeTab]);
-
-  useEffect(() => {
-    fetchVersions();
-  }, [versionSearch]);
+    // Only switch docType if not loading from draft initially
+    if (isSystemReady) {
+       setDocType(activeTab === 'SK' ? 'SK_DEKAN' : 'SE_UMUM');
+    }
+  }, [activeTab, isSystemReady]);
 
   // Handlers
-  const fetchVersions = useCallback(async () => {
-    setIsLoadingVersions(true);
-    try {
-      const params = new URLSearchParams();
-      if (versionSearch) params.append('search', versionSearch);
-
-      const res = await fetch(`http://localhost:4000/api/surat-keputusan/versions?${params.toString()}`);
-      const json = await res.json();
-      setVersions(Array.isArray(json.versions) ? json.versions : []);
-    } finally {
-      setIsLoadingVersions(false);
-    }
-  }, [versionSearch]);
-
   const buildPayload = useCallback(() => {
     // Filter empty items
     const menimbangFiltered = menimbang.filter(item => item.text.trim() !== '');
@@ -390,23 +430,45 @@ export default function SuratKeputusanSuratEdaran() {
     };
   }, [docType, perihal, nomorSurat, tempat, tanggalPenetapan, menimbang, mengingat, memperhatikan, menetapkan, pasal, approvers]);
 
-  const handleExport = useCallback(async (format: 'docx' | 'pdf', saveDraft = false) => {
+  const handlePreview = async () => {
+    try {
+      setLoadingFormat('preview');
+      const payload = buildPayload();
+
+      const response = await fetch('http://localhost:4000/api/surat-keputusan/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Gagal memuat preview');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreviewModal(true);
+    } catch (error: any) {
+      alert(`Preview Gagal: ${error.message}`);
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreviewModal(false);
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleExport = useCallback(async (format: 'docx' | 'pdf') => {
     setShowExportMenu(false);
     setIsLoadingExport(true);
     setExportError('');
 
     let payload: any = buildPayload();
     
-    if (saveDraft) {
-      const name = prompt("Masukkan nama versi untuk disimpan:", `Draft ${new Date().toISOString().slice(0,10)}`);
-      if (!name) {
-        setIsLoadingExport(false);
-        return;
-      }
-      setSaveVersionName(name);
-      payload.saveVersionName = name;
-    }
-
     try {
       const endpoint = format === 'docx' 
         ? 'http://localhost:4000/api/surat-keputusan/generate-docx'
@@ -428,10 +490,14 @@ export default function SuratKeputusanSuratEdaran() {
       const filename = `Surat_${docType}_${Date.now()}.${format}`;
       downloadFile(blob, filename);
       
-      if (saveDraft) {
-        alert("Draft saved successfully!");
-        fetchVersions();
-      }
+      // Clear Draft & Reset Form (Optional: or just keep it?)
+      // Usually users want to keep the form after export, but clear the draft key if it's considered "Done"
+      // In Modul2 reference, it clears the draft. We will follow that.
+      localStorage.removeItem(DRAFT_KEY);
+      setSaveStatus('idle');
+      
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
+
     } catch (error) {
       const msg = "Failed to export document";
       setExportError(msg);
@@ -439,7 +505,7 @@ export default function SuratKeputusanSuratEdaran() {
     } finally {
       setIsLoadingExport(false);
     }
-  }, [buildPayload, docType, fetchVersions]);
+  }, [buildPayload, docType]);
 
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
@@ -458,17 +524,31 @@ export default function SuratKeputusanSuratEdaran() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Buat Dokumen Resmi</h1>
-            <p className="text-[#8C7A6B] mt-2 text-lg">Surat Keputusan / Surat Edaran</p>
+            <div className="flex items-center gap-3 mt-2">
+              <p className="text-[#8C7A6B] text-lg">Surat Keputusan / Surat Edaran</p>
+              
+              {/* Notifikasi Draft */}
+              {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold shadow-sm border border-blue-200">✨ Draft lama dipulihkan</span>}
+              
+              {/* Indikator Status Simpan */}
+              {saveStatus === 'saving' && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium flex items-center gap-1 transition-all">
+                  <span className="animate-spin">⏳</span> Menyimpan...
+                </span>
+              )}
+              {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all">✅ Draft Tersimpan</span>}
+            </div>
           </div>
           <div className="flex gap-3 items-center">
-            <button 
-              onClick={() => handleExport('docx', true)}
-              disabled={isLoadingExport}
-              className="px-5 py-2.5 bg-white border border-[#E5DED5] text-[#8C7A6B] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm disabled:opacity-50"
+             {/* Tombol Preview */}
+             <button
+              onClick={handlePreview}
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-white border border-[#B28D35] text-[#B28D35] font-semibold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
             >
-              Simpan Draft
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview'}
             </button>
-            
+
             {/* Export Menu */}
             <div className="relative" ref={exportMenuRef}>
               <button 
@@ -704,48 +784,30 @@ export default function SuratKeputusanSuratEdaran() {
               </button>
             </div>
           </FormSection>
-
-          <FormSection title="Riwayat Versi">
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Cari versi..."
-                  value={versionSearch}
-                  onChange={(e) => setVersionSearch(e.target.value)}
-                  className="flex-1 border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
-                />
-                <button
-                  onClick={() => fetchVersions()}
-                  className="px-5 py-3.5 bg-[#4A3F35] text-white rounded-xl font-bold hover:bg-[#2D241E] transition-all"
-                >
-                  Refresh
-                </button>
-              </div>
-
-              {isLoadingVersions ? (
-                <p className="text-center text-[#8C7A6B] py-8 animate-pulse">Memuat data...</p>
-              ) : versions.length === 0 ? (
-                <div className="text-center py-8 bg-[#FDFBF7] rounded-xl border border-[#F2EFE9] text-[#A6998E]">
-                  <p className="italic">Belum ada riwayat.</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-                  {versions.map((v) => (
-                    <div key={v.id} className="p-4 bg-white hover:bg-[#FDFBF7] rounded-xl border border-[#E5DED5] flex justify-between items-center transition-all shadow-sm">
-                      <div>
-                        <p className="font-bold text-[#4A3F35]">{v.name}</p>
-                        <p className="text-[#8C7A6B] text-xs mt-1">{new Date(v.createdAt).toLocaleString('id-ID')}</p>
-                      </div>
-                      <span className="px-3 py-1 bg-[#E8F5E9] text-[#2E7D32] text-xs rounded-full font-bold uppercase tracking-wide border border-[#C8E6C9]">{v.status}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </FormSection>
         </div>
       </div>
+
+      {/* PREVIEW MODAL */}
+      {showPreviewModal && previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-bold">Preview Dokumen</h3>
+              <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
+              <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button onClick={closePreview} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
