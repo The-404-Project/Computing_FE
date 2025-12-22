@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
+import api from '../services/api';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -35,6 +36,13 @@ interface VersionEntry {
 interface DocTypeOption {
   value: DocType;
   label: string;
+}
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
 }
 
 // ============================================================================
@@ -279,6 +287,27 @@ export default function SuratKeputusanSuratEdaran() {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
   const [versionSearch, setVersionSearch] = useState('');
+
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Fetch templates kustom untuk surat keputusan
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_keputusan');
+        setTemplates(response.data.templates || []);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   // Effects
   useEffect(() => {
@@ -531,11 +560,28 @@ export default function SuratKeputusanSuratEdaran() {
                   value={docType} 
                   onChange={(e) => setDocType(e.target.value as DocType)}
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none bg-[#FDFBF7]/50 transition-all cursor-pointer"
+                  disabled={loadingTemplates}
                 >
                   {DOC_TYPE_OPTIONS[activeTab].map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
+                  
+                  {/* Template Kustom dari Database */}
+                  {templates.length > 0 && (
+                    <>
+                      <optgroup label="Template Kustom">
+                        {templates.map((template) => (
+                          <option key={template.template_id} value={`template_${template.template_id}`}>
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
+                {loadingTemplates && (
+                  <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>
+                )}
               </div>
             </div>
           </FormSection>
