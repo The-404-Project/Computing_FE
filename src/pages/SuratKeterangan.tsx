@@ -319,6 +319,7 @@ export default function SuratKeterangan() {
                   name="nim"
                   value={formData.nim}
                   onChange={handleInputChange}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
                   placeholder="Masukkan NIM"
                   style={
