@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { ChevronDown, FileText, Download, Eye, X } from "lucide-react"
 import { colors } from "../design-system"
+import api from "../services/api"
 
 interface FormData {
   nim: string
@@ -62,26 +63,14 @@ export default function SuratKeterangan() {
         setLoadingSearch(false)
         return
       }
-      const res = await fetch(`http://localhost:4000/api/surat-keterangan/mahasiswa?nim=${encodeURIComponent(formData.nim)}`)
-      if (!res.ok) {
-        let msg = 'Data mahasiswa tidak ditemukan'
-        try {
-          const body = await res.json()
-          if (body && body.message) msg = body.message
-        } catch {}
-        setSearchMessage(msg)
-        setHasMahasiswaData(false)
-        setLoadingSearch(false)
-        return
-      }
-      const data = await res.json()
+      const res = await api.get("/surat-keterangan/mahasiswa", { params: { nim: formData.nim } })
+      const data = res.data
 
       let nextNomor = ""
       try {
-        const resNum = await fetch("http://localhost:4000/api/surat-keterangan/next-number")
-        if (resNum.ok) {
-          const dataNum = await resNum.json()
-          nextNomor = dataNum.nextNumber
+        const resNum = await api.get("/surat-keterangan/next-number")
+        if (resNum.status === 200 && resNum.data && resNum.data.nextNumber) {
+          nextNomor = resNum.data.nextNumber
         }
       } catch (err) {
         console.error("Error fetching next number:", err)
@@ -98,8 +87,18 @@ export default function SuratKeterangan() {
       setSearchMessage('Data mahasiswa berhasil ditemukan.')
       setHasMahasiswaData(true)
       setShowSearchHint(false)
-    } catch (e) {
-      setSearchMessage('Terjadi kesalahan jaringan')
+    } catch (e: any) {
+      const status = e?.response?.status
+      const msg = e?.response?.data?.message
+      if (status === 404) {
+        setSearchMessage(msg || 'Data mahasiswa tidak ditemukan')
+      } else if (status === 400) {
+        setSearchMessage(msg || 'Masukkan NIM terlebih dahulu')
+      } else if (status === 500) {
+        setSearchMessage(msg || 'Kesalahan server')
+      } else {
+        setSearchMessage('Terjadi kesalahan jaringan')
+      }
       setHasMahasiswaData(false)
     } finally {
       setLoadingSearch(false)
@@ -128,6 +127,17 @@ export default function SuratKeterangan() {
       ]
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
     }
+    const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
+    let currentUserName = ""
+    let currentUserRole = ""
+    if (userRaw) {
+      try {
+        const u = JSON.parse(userRaw)
+        currentUserName = u.fullName || u.username || ""
+        currentUserRole = u.role || ""
+      } catch {}
+    }
+
     const payload = {
       nomor_surat: formData.nomorRegistrasi,
       nama: formData.namaMahasiswa,
@@ -138,39 +148,26 @@ export default function SuratKeterangan() {
       keperluan: formData.keterangan,
       kota: "Bandung",
       tanggal: formatDateID(new Date()),
-      nama_user: "Prof. Dr. Mirna Adriani, M.Sc.",
-      role: "196512345678901234",
+      nama_user: currentUserName,
+      role: currentUserRole,
       jenis_surat: formData.jenisSurat,
     }
-    fetch("http://localhost:4000/api/surat-keterangan/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+    api.post("/surat-keterangan/generate", payload)
       .then(async (res) => {
-        let data: any = {}
-        try {
-          data = await res.json()
-        } catch {}
-        if (!res.ok) {
-          const msg = (data && data.message) ? String(data.message) : 'Gagal membuat dokumen'
-          setErrorMessage(msg)
-          setGeneratedFile(null)
-          setExistingFile(data && data.file ? String(data.file) : null)
-          setShowSuccessPopup(false)
-          setShowErrorPopup(true)
-          return
-        }
+        const data: any = res.data || {}
         setGeneratedFile(data.file || null)
         setExistingFile(null)
         setShowErrorPopup(false)
         setShowSuccessPopup(true)
       })
-      .catch(() => {
+      .catch((err) => {
+        const status = err?.response?.status
+        const data = err?.response?.data || {}
+        const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
         setGeneratedFile(null)
-        setExistingFile(null)
+        setExistingFile(data && data.file ? String(data.file) : null)
         setShowSuccessPopup(false)
-        setErrorMessage('Terjadi kesalahan jaringan')
+        setErrorMessage(msg)
         setShowErrorPopup(true)
       })
   }
