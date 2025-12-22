@@ -49,6 +49,8 @@ export default function SuratKeterangan() {
   // State untuk template kustom
   const [templates, setTemplates] = useState<Template[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   // KEY UNTUK LOCAL STORAGE
   const DRAFT_KEY = 'surat_keterangan_draft_v1';
@@ -125,9 +127,46 @@ export default function SuratKeterangan() {
     }))
   }
 
-  const handlePreview = () => {
-    console.log("Previewing document")
-    // Logic untuk preview dokumen
+  const handlePreview = async () => {
+    try {
+      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
+      let currentUserName = ""
+      let currentUserRole = ""
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw)
+          currentUserName = u.fullName || u.username || ""
+          currentUserRole = u.role || ""
+        } catch {}
+      }
+      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
+      const formatDateID = (d: Date) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+
+      const payload = {
+        nomor_surat: formData.nomorRegistrasi,
+        nim: formData.nim,
+        jenis_surat: formData.jenisSurat,
+        keperluan: formData.keterangan,
+        kota: "Bandung",
+        tanggal: formatDateID(new Date()),
+        nama_user: currentUserName,
+        role: currentUserRole,
+      }
+
+      const response = await fetch('http://localhost:4000/api/surat-keterangan/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) throw new Error('Gagal memuat preview')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      setPreviewUrl(url)
+      setShowPreviewModal(true)
+    } catch (err: any) {
+      alert(err?.message ? String(err.message) : 'Gagal membuat preview')
+    }
   }
 
   const handleSearch = async () => {
@@ -268,7 +307,52 @@ export default function SuratKeterangan() {
           setShowErrorPopup(true)
         })
     } else {
-      setShowSuccessPopup(false)
+      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
+      const formatDateID = (d: Date) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
+      let currentUserName = ""
+      let currentUserRole = ""
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw)
+          currentUserName = u.fullName || u.username || ""
+          currentUserRole = u.role || ""
+        } catch {}
+      }
+      const payload = {
+        nomor_surat: formData.nomorRegistrasi,
+        nim: formData.nim,
+        jenis_surat: formData.jenisSurat,
+        keperluan: formData.keterangan,
+        kota: "Bandung",
+        tanggal: formatDateID(new Date()),
+        nama_user: currentUserName,
+        role: currentUserRole,
+      }
+      fetch(`http://localhost:4000/api/surat-keterangan/create?format=pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error('Gagal export PDF')
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `Surat_Keterangan_${Date.now()}.pdf`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+          localStorage.removeItem(DRAFT_KEY)
+          setSaveStatus('idle')
+          setShowSuccessPopup(false)
+        })
+        .catch((err: any) => {
+          alert(err?.message ? String(err.message) : 'Gagal export PDF')
+          setShowSuccessPopup(false)
+        })
     }
   }
 
@@ -679,6 +763,33 @@ export default function SuratKeterangan() {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPreviewModal && previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: `${colors.neutral.black}66` }}
+        >
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-bold">Preview Dokumen</h3>
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false)
+                  if (previewUrl) {
+                    window.URL.revokeObjectURL(previewUrl)
+                    setPreviewUrl(null)
+                  }
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
+              <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
             </div>
           </div>
         </div>
