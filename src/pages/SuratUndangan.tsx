@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 
 // --- INTERFACES ---
 interface FormData {
@@ -12,11 +12,13 @@ interface FormData {
   agenda: string;
 }
 
-// Interface untuk data penerima (Nama & Jabatan)
 interface Recipient {
   nama: string;
   jabatan: string;
 }
+
+// KEY UNTUK LOCAL STORAGE
+const DRAFT_KEY = 'surat_undangan_draft_v1';
 
 const SuratUndangan = () => {
   // --- STATE ---
@@ -35,10 +37,59 @@ const SuratUndangan = () => {
   const [inputJabatan, setInputJabatan] = useState(''); 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
 
-  // Loading & Modal State
+  // State UI
   const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false); 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  // State Penanda Draft
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false); // Notifikasi "Draft Dipulihkan"
+  const [isSystemReady, setIsSystemReady] = useState(false); // Penanda siap auto-save
+  
+  // [BARU] State Status Simpan (idle | saving | saved)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // --- 1. LOGIC LOAD DRAFT (Saat Halaman Dibuka) ---
+  useEffect(() => {
+    const savedData = localStorage.getItem(DRAFT_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.recipients) setRecipients(parsed.recipients);
+        
+        setIsDraftLoaded(true);
+        setTimeout(() => setIsDraftLoaded(false), 3000);
+      } catch (e) {
+        console.error("Gagal load draft lokal", e);
+      }
+    }
+    // Tandai sistem siap
+    setIsSystemReady(true);
+  }, []);
+
+  // --- 2. LOGIC AUTO-SAVE + NOTIFIKASI ---
+  useEffect(() => {
+    if (!isSystemReady) return;
+
+    // 1. Ubah status jadi "Menyimpan..." saat ada perubahan
+    setSaveStatus('saving');
+
+    // 2. Gunakan Timer (Debounce) agar tidak spam simpan setiap ketik satu huruf
+    const timer = setTimeout(() => {
+      const objectToSave = { formData, recipients };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
+      
+      // 3. Ubah status jadi "Tersimpan"
+      setSaveStatus('saved');
+      
+      // (Opsional) Kembalikan ke 'idle' setelah beberapa detik agar bersih
+      // setTimeout(() => setSaveStatus('idle'), 2000); 
+    }, 1000); // Delay 1 detik setelah user berhenti mengetik
+
+    return () => clearTimeout(timer);
+  }, [formData, recipients, isSystemReady]);
+
 
   // --- HANDLERS ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -57,24 +108,12 @@ const SuratUndangan = () => {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
-  // --- 1. LOGIC PREVIEW (Tanpa Simpan) ---
+  // --- PREVIEW ---
   const handlePreview = async () => {
     try {
-      setLoadingFormat('preview'); // Loading khusus preview
+      setLoadingFormat('preview');
+      const payload = { ...formData, list_tamu: recipients };
 
-      const payload = {
-        jenis_surat: formData.jenis_surat,
-        nomorSurat: formData.nomorSurat,
-        perihal: formData.perihal,
-        lampiran: formData.lampiran,
-        tanggalAcara: formData.tanggalAcara,
-        waktuMulai: formData.waktuAcara,
-        tempat: formData.lokasi,
-        agenda: formData.agenda,
-        list_tamu: recipients 
-      };
-
-      // Panggil Endpoint Preview
       const response = await fetch('http://localhost:4000/api/surat-undangan/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,24 +142,12 @@ const SuratUndangan = () => {
     }
   };
 
-  // --- 2. LOGIC EXPORT (Simpan & Download) ---
+  // --- EXPORT ---
   const handleExport = async (format: 'docx' | 'pdf') => {
     try {
       setLoadingFormat(format);
+      const payload = { ...formData, list_tamu: recipients };
 
-      const payload = {
-        jenis_surat: formData.jenis_surat,
-        nomorSurat: formData.nomorSurat,
-        perihal: formData.perihal, 
-        lampiran: formData.lampiran,
-        tanggalAcara: formData.tanggalAcara,
-        waktuMulai: formData.waktuAcara,
-        tempat: formData.lokasi,
-        agenda: formData.agenda,
-        list_tamu: recipients 
-      };
-
-      // Panggil Endpoint Create (Simpan ke DB)
       const response = await fetch(`http://localhost:4000/api/surat-undangan/create?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,6 +166,26 @@ const SuratUndangan = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
 
+      // Hapus Draft & Reset Form
+      localStorage.removeItem(DRAFT_KEY);
+      
+      setFormData({
+        jenis_surat: 'undangan_rapat',
+        nomorSurat: '',
+        lampiran: '-',
+        perihal: 'Undangan',
+        lokasi: '',
+        tanggalAcara: '',
+        waktuAcara: '',
+        agenda: ''
+      });
+      setRecipients([]);
+      
+      // Reset status simpan
+      setSaveStatus('idle');
+      
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh & Draft dihapus.`);
+
     } catch (error: any) {
       alert(`Gagal: ${error.message}`);
     } finally {
@@ -150,23 +197,37 @@ const SuratUndangan = () => {
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
       <div className="max-w-5xl mx-auto">
 
-        {/* --- HEADER SECTION --- */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Buat Surat Undangan</h1>
-            <p className="text-[#8C7A6B] mt-2 text-lg">Input detail acara untuk pembuatan dokumen otomatis.</p>
+            
+            <div className="flex items-center gap-3 mt-2">
+              <p className="text-[#8C7A6B] text-lg">Input detail acara.</p>
+              
+              {/* [BARU] Notifikasi Draft Dipulihkan */}
+              {isDraftLoaded && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold shadow-sm border border-blue-200">
+                  ✨ Draft lama dipulihkan
+                </span>
+              )}
+
+              {/* [BARU] Indikator Status Simpan (Real-time) */}
+              {saveStatus === 'saving' && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium flex items-center gap-1 transition-all">
+                  <span className="animate-spin">⏳</span> Menyimpan...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all">
+                  ✅ Tersimpan otomatis
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {/* Tombol Simpan Draft (Dummy) */}
-            <button 
-              className="px-5 py-2.5 bg-white border border-[#E5DED5] text-[#8C7A6B] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
-              onClick={() => alert("Fitur Simpan Draft (Soon)")}
-            >
-              Simpan Draft
-            </button>
-
-            {/* Tombol Preview PDF */}
+            {/* Tombol Preview */}
             <button
               onClick={handlePreview}
               disabled={loadingFormat !== null}
@@ -195,41 +256,26 @@ const SuratUndangan = () => {
           </div>
         </div>
 
-        {/* --- FORM CONTAINER --- */}
+        {/* FORM CONTAINER */}
         <div className="w-full bg-white rounded-2xl shadow-xl shadow-[#B28D35]/5 border border-[#F2EFE9] overflow-hidden">
           <div className="p-8 md:p-12">
-
+            
             <h2 className="text-xl font-bold text-[#2D241E] mb-8 flex items-center gap-2">
               <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
               Detail Acara
             </h2>
 
-            {/* NOMOR SURAT */}
             <div className="md:col-span-2 md:grid-cols-2 gap-8 mb-8">
               <label className="block text-sm font-semibold text-[#6B5E54] mb-2">
                 Nomor Surat <span className="text-[#B28D35] text-xs font-normal italic">(Opsional)</span>
               </label>
-              <input
-                type="text"
-                name="nomorSurat"
-                value={formData.nomorSurat}
-                onChange={handleChange}
-                placeholder="Contoh: 005/UND/X/2025 (Biarkan kosong untuk Auto-Generate)"
-                className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all placeholder:text-gray-300"
-              />
-              <p className="text-xs text-gray-400 mt-2 ml-1">*Jika kosong, otomatis generate nomor.</p>
+              <input type="text" name="nomorSurat" value={formData.nomorSurat} onChange={handleChange} placeholder="Contoh: 005/UND/X/2025" className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none" />
             </div>
 
-            {/* INPUT LAINNYA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
                 <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Jenis Acara</label>
-                <select
-                  name="jenis_surat"
-                  value={formData.jenis_surat}
-                  onChange={handleChange}
-                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none bg-[#FDFBF7]/50 cursor-pointer"
-                >
+                <select name="jenis_surat" value={formData.jenis_surat} onChange={handleChange} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none bg-[#FDFBF7]/50 cursor-pointer">
                   <option value="undangan_rapat">Undangan Rapat</option>
                   <option value="undangan_seminar">Undangan Seminar</option>
                   <option value="undangan_kegiatan">Undangan Kegiatan</option>
@@ -251,7 +297,7 @@ const SuratUndangan = () => {
 
             <div className="mb-10">
               <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Agenda</label>
-              <textarea name="agenda" value={formData.agenda} onChange={handleChange} rows={4} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none resize-none" placeholder="Agenda Rapat..."></textarea>
+              <textarea name="agenda" value={formData.agenda} onChange={handleChange} rows={4} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none resize-none" placeholder="Agenda..."></textarea>
             </div>
 
             <div className="h-px bg-[#F2EFE9] mb-10"></div>
@@ -261,29 +307,18 @@ const SuratUndangan = () => {
               Daftar Undangan
             </h2>
 
-            {/* INPUT PENERIMA */}
             <div className="flex flex-col md:flex-row gap-3 mb-6 items-end">
-              <div className="flex-1 w-full">
-                <input type="text" value={inputNama} onChange={(e) => setInputNama(e.target.value)} placeholder="Nama Lengkap" className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
-              </div>
-              <div className="flex-1 w-full">
-                <input type="text" value={inputJabatan} onChange={(e) => setInputJabatan(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addRecipient()} placeholder="Jabatan (Opsional)" className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
-              </div>
-              <button onClick={addRecipient} className="bg-[#B28D35] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#96762B] transition-all">Tambah</button>
+              <div className="flex-1 w-full"><input type="text" value={inputNama} onChange={(e) => setInputNama(e.target.value)} placeholder="Nama Lengkap" className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" /></div>
+              <div className="flex-1 w-full"><input type="text" value={inputJabatan} onChange={(e) => setInputJabatan(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addRecipient()} placeholder="Jabatan" className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" /></div>
+              <button onClick={addRecipient} className="bg-[#B28D35] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#96762B]">Tambah</button>
             </div>
 
-            {/* LIST PENERIMA */}
             <div className="bg-[#FDFBF7] rounded-2xl border border-[#F2EFE9] p-6 min-h-[150px]">
-              <div className="flex justify-between items-center mb-4">
-                 <p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">List Penerima ({recipients.length})</p>
-              </div>
+              <div className="flex justify-between items-center mb-4"><p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">List Penerima ({recipients.length})</p></div>
               <div className="grid grid-cols-1 gap-3">
                   {recipients.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#E5DED5] shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="text-[#4A3F35] font-bold text-lg">{item.nama}</span>
-                        {item.jabatan && <span className="text-gray-400 text-sm italic">{item.jabatan}</span>}
-                      </div>
+                      <div className="flex flex-col"><span className="text-[#4A3F35] font-bold text-lg">{item.nama}</span>{item.jabatan && <span className="text-gray-400 text-sm italic">{item.jabatan}</span>}</div>
                       <button onClick={() => removeRecipient(idx)} className="text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-sm font-bold">Hapus</button>
                     </div>
                   ))}
@@ -294,7 +329,7 @@ const SuratUndangan = () => {
         </div>
       </div>
 
-      {/* --- MODAL PREVIEW --- */}
+      {/* PREVIEW MODAL */}
       {showPreviewModal && previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
@@ -302,12 +337,8 @@ const SuratUndangan = () => {
                     <h3 className="text-lg font-bold">Preview Dokumen</h3>
                     <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">&times;</button>
                 </div>
-                <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
-                    <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
-                </div>
-                <div className="p-4 border-t flex justify-end">
-                    <button onClick={closePreview} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Done</button>
-                </div>
+                <div className="flex-1 bg-gray-50 p-2 overflow-hidden"><iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" /></div>
+                <div className="p-4 border-t flex justify-end"><button onClick={closePreview} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Done</button></div>
             </div>
         </div>
       )}
