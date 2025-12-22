@@ -239,7 +239,7 @@ const SuratUndangan = () => {
                   <span className="animate-spin">⏳</span> Menyimpan...
                 </span>
               )}
-              {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all">✅ Tersimpan otomatis</span>}
+              {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all">✅ Draft Tersimpan</span>}
             </div>
           </div>
 
