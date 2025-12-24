@@ -1,9 +1,7 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
-import { colors } from '../design-system/colors';
 import api from '../services/api';
 
 // --- Types & Interfaces ---
-
 interface Student {
   nama: string;
   nim: string;
@@ -37,19 +35,17 @@ interface Template {
   file_path: string;
 }
 
-/**
- * Component: SuratPengantarPermohonan
- * Description: Main form for generating administrative letters (Magang, Penelitian, etc.).
- * Handles dynamic data inputs, file uploads, and interaction with the backend generation API.
- */
+// KEY UNTUK LOCAL STORAGE
+const DRAFT_KEY = 'surat_pengantar_draft_v1';
+
 const SuratPengantarPermohonan = () => {
+  // --- STATE ---
   
-  // --- State Initialization ---
-  
+  // 1. Data Utama (Semua default kosong)
   const [formData, setFormData] = useState<FormData>({
     tujuanSurat: '',
     nomorSurat: '',
-    lampiran: '', 
+    lampiran: '',
     perihal: '',
     alamatTujuan: '',
     tembusan: '',
@@ -61,19 +57,81 @@ const SuratPengantarPermohonan = () => {
     penutup: ''
   });
 
-  // Dynamic lists for students and date configuration
   const [students, setStudents] = useState<Student[]>([{ nama: '', nim: '' }]);
   const [dates, setDates] = useState<DateRange>({ start: '', end: '', deadline: '' });
-  
-  // UI States
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // State untuk template kustom
+  // 2. State UI & Loading
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // 3. State Draft & Auto-save
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [isSystemReady, setIsSystemReady] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // 4. State Templates
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-  // Fetch templates kustom untuk surat pengantar
+  // --- HELPER: DYNAMIC PLACEHOLDERS ---
+  const getPlaceholders = (jenis: string) => {
+    switch (jenis) {
+        case 'pengantar_magang':
+            return {
+                perihal: "Contoh: Permohonan Kerja Praktek (Reguler)",
+                pembuka: "Contoh: Sebagai bagian pada proses studi di Program S1 Informatika...",
+                isi: "Contoh: Mohon mahasiswa tersebut dapat diberi ijin untuk melaksanakan Kerja Praktek...",
+                penutup: "Contoh: Kami mohon surat balasan (diijinkan atau tidak) dapat kami terima..."
+            };
+        case 'pengantar_penelitian':
+            return {
+                perihal: "Contoh: Permohonan Izin Penelitian Skripsi",
+                pembuka: "Contoh: Sehubungan dengan penyusunan Tugas Akhir mahasiswa...",
+                isi: "Contoh: Kami mohon bantuan Bapak/Ibu untuk memberikan izin pengambilan data...",
+                penutup: "Contoh: Demikian permohonan ini kami sampaikan. Atas bantuan..."
+            };
+        case 'permohonan_izin_kegiatan':
+            return {
+                perihal: "Contoh: Permohonan Izin Kegiatan Akademik",
+                pembuka: "Contoh: Sehubungan dengan akan dilaksanakannya kegiatan...",
+                isi: "Contoh: Kami bermaksud memohon izin penggunaan tempat/fasilitas...",
+                penutup: "Contoh: Atas perhatian dan izin yang diberikan, kami ucapkan terima kasih."
+            };
+        default:
+            return {
+                perihal: "Isi perihal surat...",
+                pembuka: "Isi paragraf pembuka...",
+                isi: "Isi detail maksud dan tujuan surat...",
+                penutup: "Isi paragraf penutup..."
+            };
+    }
+  };
+
+  const placeholders = getPlaceholders(formData.tujuanSurat);
+
+  // --- EFFECT: Load Draft ---
+  useEffect(() => {
+    const savedData = localStorage.getItem(DRAFT_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.content) setContent(parsed.content);
+        if (parsed.students) setStudents(parsed.students);
+        if (parsed.dates) setDates(parsed.dates);
+
+        setIsDraftLoaded(true);
+        setTimeout(() => setIsDraftLoaded(false), 3000);
+      } catch (e) {
+        console.error('Gagal load draft', e);
+      }
+    }
+    setIsSystemReady(true);
+  }, []);
+
+  // --- EFFECT: Fetch Templates ---
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
@@ -86,76 +144,40 @@ const SuratPengantarPermohonan = () => {
         setLoadingTemplates(false);
       }
     };
-
     fetchTemplates();
   }, []);
 
-  /**
-   * Effect: Auto-Populate Template Content
-   * Updates the 'Perihal' and content blocks automatically when the letter type changes.
-   */
+  // --- EFFECT: Auto-Save ---
   useEffect(() => {
-    let newPerihal = '';
-    let newContent = { pembuka: '', isi: '', penutup: '' };
+    if (!isSystemReady) return;
 
-    switch (formData.tujuanSurat) {
-      case 'pengantar_magang':
-        newPerihal = 'Permohonan Kerja Praktek (Reguler)';
-        newContent = {
-          pembuka: "Sebagai bagian pada proses studi di Program S1 Informatika Fakultas Informatika Universitas Telkom, mahasiswa berikut ini:",
-          isi: "Mohon mahasiswa tersebut dapat diberi ijin untuk melaksanakan Kerja Praktek (Reguler) di Instansi/Perusahaan yang Bapak/Ibu pimpin.",
-          penutup: "Kami mohon surat balasan (diijinkan atau tidak) dapat kami terima sesuai tanggal batas waktu. Demikian kami sampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih."
-        };
-        break;
-      case 'pengantar_penelitian':
-        newPerihal = 'Permohonan Izin Penelitian Skripsi';
-        newContent = {
-          pembuka: "Sehubungan dengan penyusunan Tugas Akhir mahasiswa Program Studi S1 Informatika, kami mohon bantuan Bapak/Ibu untuk memberikan izin pengambilan data.",
-          isi: "Adapun data yang dibutuhkan akan digunakan semata-mata untuk kepentingan akademis.",
-          penutup: "Demikian permohonan ini kami sampaikan. Atas bantuan dan kerjasamanya kami ucapkan terima kasih."
-        };
-        break;
-      case 'permohonan_izin_kegiatan':
-        newPerihal = 'Permohonan Izin Kegiatan Akademik';
-        newContent = {
-          pembuka: "Sehubungan dengan akan dilaksanakannya kegiatan mahasiswa...",
-          isi: "Kami bermaksud memohon izin penggunaan tempat/fasilitas...",
-          penutup: "Atas perhatian dan izin yang diberikan, kami ucapkan terima kasih."
-        };
-        break;
-    }
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      const objectToSave = { formData, content, students, dates };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
+      setSaveStatus('saved');
+    }, 1000);
 
-    if (newPerihal) {
-      setFormData(prev => ({ ...prev, perihal: newPerihal }));
-      setContent(newContent);
-    }
-  }, [formData.tujuanSurat]);
+    return () => clearTimeout(timer);
+  }, [formData, content, students, dates, isSystemReady]);
 
-  // --- Event Handlers ---
+
+  // --- HANDLERS ---
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleContentChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setContent((prev) => ({ ...prev, [name]: value }));
+  const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setContent({ ...content, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  // Student List Handlers (Add, Remove, Update)
   const handleStudentChange = (index: number, field: keyof Student, value: string) => {
     const newStudents = [...students];
     newStudents[index][field] = value;
     setStudents(newStudents);
   };
-  
+
   const addStudent = () => setStudents([...students, { nama: '', nim: '' }]);
   
   const removeStudent = (index: number) => {
@@ -164,35 +186,30 @@ const SuratPengantarPermohonan = () => {
     }
   };
 
-  /**
-   * Helper: Formats YYYY-MM-DD string to Indonesian date format (e.g., 20 Januari 2025).
-   */
-  const formatDateIndo = (dateString: string) => {
-    if (!dateString) return '-';
-    // Split manually to avoid timezone shifts
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    
-    return date.toLocaleDateString('id-ID', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    });
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
   };
 
-  /**
-   * Constructs the payload object to match the backend expected structure.
-   */
+  // --- DATA PREPARATION ---
+  const formatDateIndo = (dateString: string) => {
+    if (!dateString) return '-';
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
   const constructPayload = () => {
     return {
       jenis_surat: formData.tujuanSurat,
+      nomorSurat: formData.nomorSurat, 
       metadata: {
-        nomor_surat: formData.nomorSurat || "-", 
-        lampiran: formData.lampiran || "-", 
         perihal: formData.perihal,
+        lampiran: formData.lampiran,
         alamat_array: formData.alamatTujuan.split('\n'),
         cc_array: formData.tembusan ? formData.tembusan.split(',').map(s => s.trim()) : [],
-        lampiran_file: file ? file.name : "-" 
+        lampiran_file: file ? file.name : "-"
       },
       content_blocks: content,
       dynamic_data: {
@@ -206,353 +223,316 @@ const SuratPengantarPermohonan = () => {
     };
   };
 
-  /**
-   * Submits the data to the backend API and handles the file download.
-   */
-  const handleExport = async (format: 'docx' | 'pdf') => {
+  // --- API ACTIONS ---
+
+  const handlePreview = async () => {
     if (!formData.tujuanSurat) {
-      alert("Mohon pilih Tujuan Surat terlebih dahulu!");
-      return;
+        alert("Pilih jenis surat terlebih dahulu.");
+        return;
     }
-
     try {
-      setIsLoading(true);
+      setLoadingFormat('preview');
       const payload = constructPayload();
-      
-      // Ensure the port matches your backend server
-      const endpoint = `http://localhost:4000/api/surat-pengantar/generate?format=${format}`;
 
-      const response = await fetch(endpoint, {
+      const response = await fetch('http://localhost:4000/api/surat-pengantar/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorRes = await response.json();
-        throw new Error(errorRes.message || 'Failed to generate document');
-      }
+      if (!response.ok) throw new Error('Gagal memuat preview');
 
-      // Convert response to Blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreviewModal(true);
+    } catch (error: any) {
+      alert(`Preview Gagal: ${error.message}`);
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
+
+  const handleExport = async (format: 'docx' | 'pdf') => {
+    if (!formData.tujuanSurat) {
+        alert("Pilih jenis surat terlebih dahulu.");
+        return;
+    }
+    try {
+      setLoadingFormat(format);
+      const payload = constructPayload();
+
+      const response = await fetch(`http://localhost:4000/api/surat-pengantar/create?format=${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Gagal export file.');
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
-      const cleanPerihal = formData.perihal.replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanPerihal = (formData.perihal || 'Surat').replace(/[^a-zA-Z0-9]/g, '_');
       a.download = `Surat_${cleanPerihal}_${Date.now()}.${format}`;
-      
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
 
+      // Reset Draft & State
+      localStorage.removeItem(DRAFT_KEY);
+      setSaveStatus('idle');
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
+
     } catch (error: any) {
-      console.error('Export Error:', error);
-      alert(`Gagal: ${error.message}\nPastikan backend jalan di port 4000.`);
+      alert(`Gagal: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setLoadingFormat(null);
     }
   };
 
-  const isStudentDataNeeded = 
-    formData.tujuanSurat === 'pengantar_magang' || 
-    formData.tujuanSurat === 'pengantar_penelitian';
+  const closePreview = () => {
+    setShowPreviewModal(false);
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const isStudentDataNeeded = ['pengantar_magang', 'pengantar_penelitian'].includes(formData.tujuanSurat);
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8" style={{ backgroundColor: colors.neutral.white }}>
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
+      <div className="max-w-5xl mx-auto">
         
-        {/* Header Section */}
-        <header className="mb-6 md:mb-8 pb-4 border-b" style={{ borderColor: '#e5e7eb' }}>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:mx-20 mx-10">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.primary.dark }}>
-                Buat Surat Pengantar & Permohonan
-              </h1>
-              <p className="mt-1 text-sm sm:text-base font-normal" style={{ color: colors.primary.medium }}>
-                Isi formulir di bawah ini untuk membuat surat secara otomatis.
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleExport('docx')}
-                disabled={isLoading}
-                className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all hover:bg-gray-700 disabled:bg-gray-400"
-                style={{ backgroundColor: '#2563EB', color: 'white' }}
-              >
-                <FileIcon />
-                {isLoading ? 'Loading...' : 'Export DOCX'}
-              </button>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Surat Pengantar & Permohonan</h1>
+            <div className="flex items-center gap-3 mt-2">
+              <p className="text-[#8C7A6B] text-lg">Buat surat magang, penelitian, atau izin kegiatan.</p>
               
-              <button
-                type="button"
-                onClick={() => handleExport('pdf')}
-                disabled={isLoading}
-                className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all hover:bg-gray-700 disabled:bg-gray-400"
-                style={{ backgroundColor: '#DC2626', color: 'white' }}
-              >
-                <FileIcon />
-                {isLoading ? 'Converting...' : 'Export PDF'}
-              </button>
+              {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold shadow-sm border border-blue-200">✨ Draft dipulihkan</span>}
+              {saveStatus === 'saving' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium flex items-center gap-1"><span className="animate-spin">⏳</span> Menyimpan...</span>}
+              {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">✅ Draft Tersimpan</span>}
             </div>
           </div>
-        </header>
 
-        {/* Form Content */}
-        <form className="space-y-6 md:space-y-8 md:mx-30 mx-20" onSubmit={(e) => e.preventDefault()}>
-          
-          <FormSection title="Informasi Dasar Surat">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <TextField
-                id="tujuanSurat"
-                name="tujuanSurat"
-                label="Jenis / Tujuan Surat"
-                value={formData.tujuanSurat}
-                onChange={handleChange}
-                as="select"
-                required
-              >
-                <option value="" disabled>Pilih Jenis Surat</option>
-                <option value="pengantar_magang">Surat Pengantar Magang (KP)</option>
-                <option value="pengantar_penelitian">Surat Pengantar Penelitian</option>
-                <option value="permohonan_izin_kegiatan">Surat Izin Kegiatan</option>
-                <option value="permohonan_kerjasama">Surat Permohonan Kerjasama</option>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handlePreview}
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-white border border-[#B28D35] text-[#B28D35] font-semibold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview'}
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-[#4A3F35] text-white font-semibold rounded-lg hover:bg-[#2D241E] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              {loadingFormat === 'pdf' ? 'Processing...' : 'Export PDF'}
+            </button>
+            <button
+              onClick={() => handleExport('docx')}
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-[#B28D35] text-white font-semibold rounded-lg hover:bg-[#96762B] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              {loadingFormat === 'docx' ? 'Processing...' : 'Export DOCX'}
+            </button>
+          </div>
+        </div>
+
+        {/* FORM CONTAINER */}
+        <div className="w-full bg-white rounded-2xl shadow-xl shadow-[#B28D35]/5 border border-[#F2EFE9] overflow-hidden">
+          <div className="p-8 md:p-12 space-y-10">
+
+            {/* SECTION 1: INFORMASI DASAR */}
+            <div>
+                <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+                    Informasi Dasar
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Jenis / Tujuan Surat</label>
+                        <select 
+                            name="tujuanSurat" 
+                            value={formData.tujuanSurat} 
+                            onChange={handleChange} 
+                            className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none bg-[#FDFBF7]/50"
+                            disabled={loadingTemplates}
+                        >
+                            <option value="" disabled>-- Pilih Jenis Surat --</option>
+                            <option value="pengantar_magang">Surat Pengantar Magang (KP)</option>
+                            <option value="pengantar_penelitian">Surat Pengantar Penelitian</option>
+                            <option value="permohonan_izin_kegiatan">Surat Izin Kegiatan</option>
+                            <option value="permohonan_kerjasama">Surat Permohonan Kerjasama</option>
+                            {templates.length > 0 && (
+                                <optgroup label="Template Kustom">
+                                    {templates.map(t => <option key={t.template_id} value={`template_${t.template_id}`}>{t.template_name}</option>)}
+                                </optgroup>
+                            )}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Nomor Surat <span className="text-[#B28D35] text-xs font-normal italic">(Biarkan kosong untuk auto)</span></label>
+                        <input type="text" name="nomorSurat" value={formData.nomorSurat} onChange={handleChange} placeholder="Contoh: 001/AKD/2025" className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
+                    </div>
+                </div>
                 
-                {/* Template Kustom dari Database */}
-                {templates.length > 0 && (
-                  <>
-                    <optgroup label="Template Kustom">
-                      {templates.map((template) => (
-                        <option key={template.template_id} value={`template_${template.template_id}`}>
-                          {template.template_name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                )}
-              </TextField>
+                <div className="mt-6">
+                     <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
+                     <input 
+                       type="text" 
+                       name="perihal" 
+                       value={formData.perihal} 
+                       onChange={handleChange} 
+                       className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" 
+                       placeholder={placeholders.perihal} 
+                    />
+                </div>
 
-              <TextField
-                id="nomorSurat"
-                name="nomorSurat"
-                label="Nomor Surat (Manual)"
-                value={formData.nomorSurat}
-                onChange={handleChange}
-                placeholder="Contoh: 001/AKD/2025"
-                required
-              />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Alamat Tujuan (Yth...)</label>
+                        <textarea name="alamatTujuan" value={formData.alamatTujuan} onChange={handleChange} rows={4} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none font-mono text-sm" placeholder={`Yth. HRD PT Telkom\nJl. Geger Kalong No 1\nBandung`} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Lampiran</label>
+                        <input type="text" name="lampiran" value={formData.lampiran} onChange={handleChange} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none mb-4" placeholder="Contoh: 1 (satu) Berkas" />
+                        
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Upload File Pendukung (Opsional)</label>
+                        <input type="file" onChange={handleFileChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#B28D35] file:text-white hover:file:bg-[#96762B]" />
+                    </div>
+                </div>
             </div>
 
-            <div className="mt-4">
-               <TextField
-                id="lampiran"
-                name="lampiran"
-                label="Lampiran"
-                value={formData.lampiran}
-                onChange={handleChange}
-                placeholder="Contoh: 1 (satu) Berkas Proposal"
-                required
-              />
-            </div>
+            <div className="h-px bg-[#F2EFE9]"></div>
 
-            <div className="mt-4">
-                <TextField
-                    id="perihal"
-                    name="perihal"
-                    label="Perihal"
-                    value={formData.perihal}
-                    onChange={handleChange}
-                    placeholder="Contoh: Permohonan Izin Penelitian Skripsi"
-                    required
-                />
-            </div>
-
-            <div className="mt-4">
-                <TextField
-                    id="alamatTujuan"
-                    name="alamatTujuan"
-                    label="Alamat Tujuan"
-                    value={formData.alamatTujuan}
-                    onChange={handleChange}
-                    as="textarea"
-                    rows={4}
-                    placeholder={`Yth. Bapak/Ibu [Nama]\n[Jabatan]\n[Nama Instansi]\n[Alamat Lengkap]`}
-                    className="font-mono text-sm"
-                    required
-                />
-            </div>
-          </FormSection>
-
-          {/* Dynamic Section: Students & Dates */}
-          {isStudentDataNeeded && (
-            <div className="w-full border rounded-lg overflow-hidden shadow-sm bg-blue-50 border-blue-200">
-              <div className="text-left py-4 px-4 sm:px-6 border-b border-blue-200">
-                <h2 className="text-lg font-semibold text-blue-800">Data Mahasiswa & Waktu</h2>
-              </div>
-              <div className="px-4 sm:px-6 py-5 space-y-4">
-                
-                {/* Student List */}
+            {/* SECTION 2: DATA MAHASISWA & TANGGAL */}
+            {isStudentDataNeeded && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Daftar Mahasiswa</label>
-                  {students.map((student, idx) => (
-                    <div key={idx} className="flex gap-3 mb-2">
-                      <div className="w-1/3">
-                         <input 
-                           placeholder="NIM" 
-                           className="w-full border rounded px-3 py-2 text-sm"
-                           value={student.nim}
-                           onChange={e => handleStudentChange(idx, 'nim', e.target.value)}
-                         />
-                      </div>
-                      <div className="w-2/3 flex gap-2">
-                         <input 
-                           placeholder="Nama Lengkap" 
-                           className="w-full border rounded px-3 py-2 text-sm"
-                           value={student.nama}
-                           onChange={e => handleStudentChange(idx, 'nama', e.target.value)}
-                         />
-                         {students.length > 1 && (
-                            <button type="button" onClick={() => removeStudent(idx)} className="text-red-500 hover:text-red-700 font-bold px-2">✕</button>
-                         )}
-                      </div>
+                     <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+                        Data Mahasiswa & Waktu
+                    </h2>
+                    
+                    <div className="bg-[#FDFBF7] rounded-xl border border-[#F2EFE9] p-6 mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-[#8C7A6B] uppercase tracking-widest">Daftar Mahasiswa</h3>
+                            <button onClick={addStudent} className="text-sm text-[#B28D35] font-bold hover:underline">+ Tambah Mahasiswa</button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {students.map((student, idx) => (
+                                <div key={idx} className="flex gap-4">
+                                    <div className="w-1/3">
+                                        <input type="text" value={student.nim} onChange={e => handleStudentChange(idx, 'nim', e.target.value)} placeholder="NIM" className="w-full border border-[#E5DED5] rounded-lg p-3 outline-none bg-white" />
+                                    </div>
+                                    <div className="w-2/3 flex gap-2">
+                                        <input type="text" value={student.nama} onChange={e => handleStudentChange(idx, 'nama', e.target.value)} placeholder="Nama Lengkap" className="w-full border border-[#E5DED5] rounded-lg p-3 outline-none bg-white" />
+                                        {students.length > 1 && (
+                                            <button onClick={() => removeStudent(idx)} className="text-rose-500 hover:text-rose-700 px-2 font-bold">✕</button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                  ))}
-                  <button type="button" onClick={addStudent} className="text-sm text-blue-600 font-medium hover:underline mt-1">
-                    + Tambah Mahasiswa Lain
-                  </button>
-                </div>
 
-                {/* Date Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-blue-100">
-                   <div>
-                     <label className="text-xs font-semibold text-gray-600 block mb-1">Tanggal Mulai</label>
-                     <input type="date" className="w-full border rounded p-2 text-sm" onChange={e => setDates({...dates, start: e.target.value})} />
-                   </div>
-                   <div>
-                     <label className="text-xs font-semibold text-gray-600 block mb-1">Tanggal Selesai</label>
-                     <input type="date" className="w-full border rounded p-2 text-sm" onChange={e => setDates({...dates, end: e.target.value})} />
-                   </div>
-                   <div>
-                     <label className="text-xs font-semibold text-gray-600 block mb-1">Batas Waktu Balasan</label>
-                     <input type="date" className="w-full border rounded p-2 text-sm" onChange={e => setDates({...dates, deadline: e.target.value})} />
-                   </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <FormSection title="Konten Surat (Dapat Diedit)">
-            <TextField
-              id="pembuka"
-              name="pembuka"
-              label="Paragraf Pembuka"
-              value={content.pembuka}
-              onChange={handleContentChange}
-              as="textarea"
-              rows={3}
-            />
-            <TextField
-              id="isi"
-              name="isi"
-              label="Detail Permohonan (Isi Utama)"
-              value={content.isi}
-              onChange={handleContentChange}
-              as="textarea"
-              rows={4}
-            />
-            <TextField
-              id="penutup"
-              name="penutup"
-              label="Paragraf Penutup"
-              value={content.penutup}
-              onChange={handleContentChange}
-              as="textarea"
-              rows={3}
-            />
-          </FormSection>
-
-          <FormSection title="Lampiran & Tambahan">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              
-              {/* File Upload Area */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold" style={{ color: '#374151' }}>Dokumen Pendukung</label>
-                <div className="flex justify-center items-center w-full h-48 border-2 border-dashed rounded-lg bg-gray-50 border-gray-300">
-                  <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-gray-100 transition-colors">
-                    <div className="flex flex-col items-center justify-center text-center p-4">
-                      <UploadIcon />
-                      {file ? (
-                        <p className="font-semibold text-sm mt-2">{file.name}</p>
-                      ) : (
-                        <><p className="mb-1 text-sm text-gray-500 font-semibold">Klik untuk unggah</p><p className="text-xs text-gray-500">PDF, DOCX (MAX. 5MB)</p></>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tanggal Mulai</label>
+                            <input type="date" value={dates.start} onChange={e => setDates({...dates, start: e.target.value})} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tanggal Selesai</label>
+                            <input type="date" value={dates.end} onChange={e => setDates({...dates, end: e.target.value})} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Deadline Balasan</label>
+                            <input type="date" value={dates.deadline} onChange={e => setDates({...dates, deadline: e.target.value})} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" />
+                        </div>
                     </div>
-                    <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.docx,.jpg" />
-                  </label>
                 </div>
-              </div>
+            )}
 
-              <TextField
-                id="tembusan"
-                name="tembusan"
-                label="Tembusan (CC)"
-                value={formData.tembusan}
-                onChange={handleChange}
-                as="textarea"
-                placeholder="Kaprodi S1 Informatika, Dosen Wali..."
-                className="h-48"
-              />
+            {isStudentDataNeeded && <div className="h-px bg-[#F2EFE9]"></div>}
+
+            {/* SECTION 3: KONTEN SURAT */}
+            <div>
+                 <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+                    Konten Surat (Editable)
+                </h2>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Paragraf Pembuka</label>
+                        <textarea 
+                            name="pembuka" 
+                            value={content.pembuka} 
+                            onChange={handleContentChange} 
+                            rows={3} 
+                            className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none resize-none"
+                            placeholder={placeholders.pembuka}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Isi Utama / Detail Permohonan</label>
+                        <textarea 
+                            name="isi" 
+                            value={content.isi} 
+                            onChange={handleContentChange} 
+                            rows={4} 
+                            className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none resize-none"
+                            placeholder={placeholders.isi}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Paragraf Penutup</label>
+                        <textarea 
+                            name="penutup" 
+                            value={content.penutup} 
+                            onChange={handleContentChange} 
+                            rows={3} 
+                            className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none resize-none"
+                            placeholder={placeholders.penutup}
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tembusan (CC)</label>
+                        <textarea name="tembusan" value={formData.tembusan} onChange={handleChange} rows={2} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" placeholder="Contoh: Arsip, Dosen Wali (Pisahkan dengan koma)" />
+                    </div>
+                </div>
             </div>
-          </FormSection>
-          <div className='mt-15'></div>
-        </form>
+
+          </div>
+        </div>
       </div>
+
+      {/* PREVIEW MODAL */}
+      {showPreviewModal && previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-bold">Preview Dokumen</h3>
+              <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">&times;</button>
+            </div>
+            <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
+              <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+               <button onClick={closePreview} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl font-bold">Tutup</button>
+               <button onClick={() => { closePreview(); handleExport('docx'); }} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Download Sekarang</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SuratPengantarPermohonan;
-
-// --- Helper Components & Icons ---
-
-interface FormSectionProps { title: string; children: React.ReactNode; }
-const FormSection = ({ title, children }: FormSectionProps) => (
-  <div className="w-full border rounded-lg overflow-hidden shadow-sm" style={{ borderColor: '#e5e7eb', backgroundColor: colors.neutral.white }}>
-    <div className="text-left py-4 px-4 sm:px-6 border-b" style={{ borderColor: '#e5e7eb' }}>
-      <h2 className="text-lg sm:text-xl font-semibold" style={{ color: '#1f2937' }}>{title}</h2>
-    </div>
-    <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-4">{children}</div>
-  </div>
-);
-
-type InputProps = { id: string; name: string; label: string; as?: 'input' | 'textarea' | 'select'; children?: React.ReactNode; className?: string; } & (React.InputHTMLAttributes<HTMLInputElement> | React.TextareaHTMLAttributes<HTMLTextAreaElement> | React.SelectHTMLAttributes<HTMLSelectElement>);
-const TextField = ({ id, name, label, as = 'input', children, className = '', ...props }: InputProps) => {
-  const commonProps = {
-    id, name,
-    className: `w-full bg-transparent border rounded px-3 py-2.5 text-sm outline-none transition-colors focus:border-gray-400 ${className}`,
-    style: { borderColor: '#d1d5db', color: '#111827', backgroundColor: '#f9fafb' },
-    ...props,
-  };
-  return (
-    <div className="flex flex-col gap-1.5 sm:gap-2">
-      <label htmlFor={id} className="text-sm font-semibold" style={{ color: '#374151' }}>{label}</label>
-      <div className="relative flex items-center">
-        {as === 'input' && <input {...(commonProps as React.InputHTMLAttributes<HTMLInputElement>)} />}
-        {as === 'textarea' && <textarea {...(commonProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} />}
-        {as === 'select' && (
-          <>
-            <select {...(commonProps as React.SelectHTMLAttributes<HTMLSelectElement>)} className={`${commonProps.className} appearance-none pr-9`}>{children}</select>
-            <div className="absolute right-3 flex items-center pointer-events-none"><svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg></div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const FileIcon = () => (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>);
-const UploadIcon = () => (<svg className="w-8 h-8 mb-3 text-gray-500" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>);
