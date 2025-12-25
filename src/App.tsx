@@ -7,6 +7,7 @@ import SuratTugas from './pages/SuratTugas';
 import SuratUndangan from './pages/SuratUndangan';
 import SuratKeputusanSuratEdaran from './pages/SuratKeputusanSuratEdaran';
 import SuratKeterangan from './pages/SuratKeterangan';
+import SuratProdi from './pages/SuratProdi';
 import ComingSoon from './pages/ComingSoon';
 import ArsipSurat from './pages/ArsipSurat';
 import SuratLAAK from './pages/SuratLAAK';
@@ -263,7 +264,7 @@ function App() {
         onOpenTemplateManagement={handleOpenTemplateManagement}
         activeMenuItem="surat_prodi"
       >
-        <ComingSoon title="Surat Program Studi" description="Modul Surat Program Studi sedang dalam pengembangan" onBack={handleBackToDashboard} />
+        <SuratProdi />
       </Layout>
     );
   }
