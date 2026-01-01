@@ -1,6 +1,6 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
-import api from '../services/api';
 
+// --- Interfaces ---
 interface KriteriaRow {
   kriteria: string;
   standar: string;
@@ -25,20 +25,14 @@ interface FormData {
   penutup: string;
 }
 
-type ExportFormat = 'pdf' | 'docx';
-
-interface Template {
-  template_id: number;
-  template_name: string;
-  template_type: string;
-  file_path: string;
-}
-
 const romanMonths = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
 const pad = (n: number, len = 3) => String(n).padStart(len, '0');
 
+// Key LocalStorage untuk Draft
+const DRAFT_KEY = 'surat_laak_draft_v1';
+
 const SuratLAAK = () => {
-  // Form state
+  // --- 1. STATE DATA ---
   const [formData, setFormData] = useState<FormData>({
     jenisSurat: 'Surat Permohonan Akreditasi',
     nomorSurat: '',
@@ -51,7 +45,6 @@ const SuratLAAK = () => {
     penutup: ''
   });
 
-  // Dynamic rows
   const [kriteriaList, setKriteriaList] = useState<KriteriaRow[]>([
     { kriteria: 'Kriteria 1', standar: 'Standar 1', deskripsi: 'Dokumentasi & bukti pendukung' },
     { kriteria: 'Kriteria 2', standar: 'Standar 2', deskripsi: 'Hasil evaluasi capaian' },
@@ -62,35 +55,62 @@ const SuratLAAK = () => {
     { nama: 'Daftar APM', jenis: 'APM', link: '' },
   ]);
 
-  // Preview & Export states
-  const [showPreview, setShowPreview] = useState(false);
-  const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null);
-
-  // Chart placeholder
+  // --- 2. STATE UI & SYSTEM ---
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
+  
+  // Chart toggle (UI Only)
   const [showChart, setShowChart] = useState(false);
 
-  // State untuk template kustom
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  // Draft States
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [isSystemReady, setIsSystemReady] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // Fetch templates kustom untuk surat LAAK
+  // --- 3. EFFECT: LOAD DRAFT ---
   useEffect(() => {
-    const fetchTemplates = async () => {
-      setLoadingTemplates(true);
+    const savedData = localStorage.getItem(DRAFT_KEY);
+    if (savedData) {
       try {
-        const response = await api.get('/dashboard/templates/by-type/surat_laak');
-        setTemplates(response.data.templates || []);
-      } catch (err) {
-        console.error('Error fetching templates:', err);
-      } finally {
-        setLoadingTemplates(false);
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.kriteriaList) setKriteriaList(parsed.kriteriaList);
+        if (parsed.lampiranList) setLampiranList(parsed.lampiranList);
+        
+        setIsDraftLoaded(true);
+        setTimeout(() => setIsDraftLoaded(false), 3000);
+      } catch (e) {
+        console.error('Gagal load draft', e);
       }
-    };
-
-    fetchTemplates();
+    } else {
+        // Init tanggal default jika tidak ada draft
+        const d = new Date();
+        // Format YYYY-MM-DD untuk input date HTML
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        setFormData(prev => ({ ...prev, tanggal: `${yyyy}-${mm}-${dd}` }));
+    }
+    setIsSystemReady(true);
   }, []);
 
-  // Handlers
+  // --- 4. EFFECT: AUTO-SAVE ---
+  useEffect(() => {
+    if (!isSystemReady) return;
+
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      const objectToSave = { formData, kriteriaList, lampiranList };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
+      setSaveStatus('saved');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData, kriteriaList, lampiranList, isSystemReady]);
+
+
+  // --- 5. HANDLERS ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -111,19 +131,11 @@ const SuratLAAK = () => {
     });
   };
 
-  const addKriteria = () => {
-    setKriteriaList(prev => [...prev, { kriteria: '', standar: '', deskripsi: '' }]);
-  };
-  const removeKriteria = (index: number) => {
-    setKriteriaList(prev => prev.filter((_, i) => i !== index));
-  };
+  const addKriteria = () => setKriteriaList(prev => [...prev, { kriteria: '', standar: '', deskripsi: '' }]);
+  const removeKriteria = (index: number) => setKriteriaList(prev => prev.filter((_, i) => i !== index));
 
-  const addLampiran = () => {
-    setLampiranList(prev => [...prev, { nama: '', jenis: '', link: '' }]);
-  };
-  const removeLampiran = (index: number) => {
-    setLampiranList(prev => prev.filter((_, i) => i !== index));
-  };
+  const addLampiran = () => setLampiranList(prev => [...prev, { nama: '', jenis: '', link: '' }]);
+  const removeLampiran = (index: number) => setLampiranList(prev => prev.filter((_, i) => i !== index));
 
   const generateNumber = () => {
     const urut = Math.floor(Date.now() % 10000);
@@ -136,34 +148,89 @@ const SuratLAAK = () => {
     setFormData(prev => ({ ...prev, nomorSurat: nomor }));
   };
 
-  const openPreview = () => setShowPreview(true);
-  const closePreview = () => setShowPreview(false);
-  const saveDraft = () => alert('Draft disimpan (placeholder)');
-  const renderChart = () => setShowChart(true);
+  // --- 6. API ACTIONS (CONNECT KE BACKEND) ---
 
-  // Export placeholder (sesuaikan endpoint bila backend LAAK tersedia)
-  const handleExport = async (format: ExportFormat) => {
+  const constructPayload = () => {
+    // Format tanggal ke Indo untuk dikirim ke backend (opsional, tergantung backend)
+    // Di sini kita kirim raw string saja, biar backend/template yang format
+    return {
+        ...formData,
+        kriteriaList,
+        lampiranList
+    };
+  };
+
+  const handlePreview = async () => {
     try {
-      setLoadingFormat(format);
-      // TODO: arahkan ke endpoint backend jika sudah tersedia
-      // contoh: const endpoint = `http://localhost:4000/api/surat-laak/create?format=${format}`;
-      // untuk saat ini, placeholder:
-      await new Promise(res => setTimeout(res, 1000));
-      alert(`Export ${format.toUpperCase()} (placeholder)`);
-    } catch (e: any) {
-      alert(`Gagal: ${e?.message || 'Terjadi kesalahan'}`);
+      setLoadingFormat('preview');
+      const payload = constructPayload();
+
+      // Panggil API Preview Backend
+      const response = await fetch('http://localhost:4000/api/surat-laak/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Gagal memuat preview');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreviewModal(true);
+    } catch (error: any) {
+      alert(`Preview Gagal: ${error.message}`);
     } finally {
       setLoadingFormat(null);
     }
   };
 
-  // init tanggal default
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useState(() => {
-    const d = new Date();
-    setFormData(prev => ({ ...prev, tanggal: d.toLocaleDateString('id-ID') }));
-    return null;
-  });
+  const handleExport = async (format: 'pdf' | 'docx') => {
+    try {
+      setLoadingFormat(format);
+      const payload = constructPayload();
+
+      // Panggil API Create Backend
+      const response = await fetch(`http://localhost:4000/api/surat-laak/create?format=${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Gagal export file.');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const cleanUnit = (formData.unit || 'LAAK').replace(/[^a-zA-Z0-9]/g, '_');
+      a.download = `LAAK_${cleanUnit}_${Date.now()}.${format}`;
+      
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Hapus Draft setelah sukses export (Opsional, style Modul 4)
+      localStorage.removeItem(DRAFT_KEY);
+      setSaveStatus('idle');
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
+
+    } catch (error: any) {
+      alert(`Gagal: ${error.message}`);
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreviewModal(false);
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
@@ -173,31 +240,41 @@ const SuratLAAK = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Buat Surat LAAK (Akreditasi & Audit)</h1>
-            <p className="text-[#8C7A6B] mt-2 text-lg">Isi form untuk membuat dokumen akreditasi sesuai standar BAN-PT/LAM.</p>
+            <div className="flex items-center gap-3 mt-2">
+                <p className="text-[#8C7A6B] text-lg">Dokumen standar BAN-PT/LAM.</p>
+                {/* Indikator Status */}
+                {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold">✨ Draft Load</span>}
+                {saveStatus === 'saving' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">⏳ Menyimpan...</span>}
+                {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">✅ Tersimpan</span>}
+            </div>
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={saveDraft}
-              className="px-5 py-2.5 bg-white border border-[#E5DED5] text-[#8C7A6B] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
+             {/* Tombol Preview Real */}
+             <button
+              onClick={handlePreview}
+              disabled={loadingFormat !== null}
+              className="px-5 py-2.5 bg-white border border-[#B28D35] text-[#B28D35] font-semibold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
             >
-              Simpan Draft
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview'}
             </button>
 
+            {/* Tombol Export PDF Real */}
             <button
               onClick={() => handleExport('pdf')}
               disabled={loadingFormat !== null}
               className="px-5 py-2.5 bg-[#4A3F35] text-white font-semibold rounded-lg hover:bg-[#2D241E] transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
             >
-              {loadingFormat === 'pdf' ? <span className="animate-pulse">Processing...</span> : 'Export PDF'}
+              {loadingFormat === 'pdf' ? 'Processing...' : 'Export PDF'}
             </button>
 
+            {/* Tombol Export DOCX Real */}
             <button
               onClick={() => handleExport('docx')}
               disabled={loadingFormat !== null}
               className="px-5 py-2.5 bg-[#B28D35] text-white font-semibold rounded-lg hover:bg-[#96762B] transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
             >
-              {loadingFormat === 'docx' ? <span className="animate-pulse">Processing...</span> : 'Export DOCX'}
+              {loadingFormat === 'docx' ? 'Processing...' : 'Export DOCX'}
             </button>
           </div>
         </div>
@@ -220,29 +297,13 @@ const SuratLAAK = () => {
                   value={formData.jenisSurat}
                   onChange={handleChange}
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none bg-[#FDFBF7]/50 transition-all cursor-pointer"
-                  disabled={loadingTemplates}
                 >
                   <option>Surat Permohonan Akreditasi</option>
                   <option>Laporan Audit Internal</option>
                   <option>Surat Tindak Lanjut Audit</option>
                   <option>Berita Acara Visitasi</option>
-                  
-                  {/* Template Kustom dari Database */}
-                  {templates.length > 0 && (
-                    <>
-                      <optgroup label="Template Kustom">
-                        {templates.map((template) => (
-                          <option key={template.template_id} value={`template_${template.template_id}`}>
-                            {template.template_name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </>
-                  )}
                 </select>
-                {loadingTemplates && (
-                  <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>
-                )}
+                {/* Note: Tidak ada custom template karena backend hardcoded */}
               </div>
 
               <div>
@@ -298,7 +359,6 @@ const SuratLAAK = () => {
                   name="tanggal"
                   value={formData.tanggal}
                   onChange={handleChange}
-                  placeholder="DD/MM/YYYY"
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
                 />
               </div>
@@ -452,12 +512,6 @@ const SuratLAAK = () => {
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[#6B5E54]">Generate Grafik</label>
                 <input type="checkbox" checked={showChart} onChange={e => setShowChart(e.target.checked)} />
-                <button
-                  onClick={renderChart}
-                  className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
-                >
-                  Generate Sekarang
-                </button>
               </div>
             </div>
 
@@ -536,99 +590,27 @@ const SuratLAAK = () => {
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none resize-none transition-all"
                 ></textarea>
               </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">
-                  Numbering system: gunakan format BAN-PT / internal LAAK
-                </p>
-                <button
-                  onClick={openPreview}
-                  className="px-5 py-2.5 bg-[#4A3F35] text-white font-semibold rounded-lg hover:bg-[#2D241E] transition-all shadow-sm"
-                >
-                  Preview
-                </button>
-              </div>
             </div>
 
           </div>
         </div>
       </div>
 
-      {/* Preview Modal */}
-      {showPreview && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-6 z-50" onClick={closePreview}>
-          <div className="w-full max-w-4xl max-h-[85vh] overflow-auto bg-white rounded-2xl p-6 border border-[#F2EFE9]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <strong className="text-[#2D241E]">Preview Dokumen</strong>
-              <div className="flex gap-2">
-                <button
-                  className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
-                  onClick={closePreview}
-                >
-                  Tutup
-                </button>
-                <button
-                  className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
-                  onClick={() => window.print()}
-                >
-                  Cetak
-                </button>
-              </div>
+      {/* Preview Modal (PDF Iframe) */}
+      {showPreviewModal && previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-bold">Preview Dokumen (Watermarked)</h3>
+              <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">&times;</button>
             </div>
-
-            <div className="pt-3 border-t border-[#F2EFE9]">
-              <h2 className="text-xl font-bold mb-1">{formData.jenisSurat}</h2>
-              <p className="text-sm text-[#8C7A6B] mb-3">
-                Nomor: {formData.nomorSurat || '(nomor belum diisi)'} &nbsp;|&nbsp; Unit: {formData.unit || '-'} &nbsp;|&nbsp; Perihal: {formData.perihal || '-'}
-              </p>
-
-              <div className="space-y-4 text-[#4A3F35]">
-                <p>
-                  <strong>Paragraf Pembuka</strong><br />
-                  {formData.pembuka || '-'}
-                </p>
-                <p>
-                  <strong>Isi</strong><br />
-                  {formData.isi || '-'}
-                </p>
-                <p>
-                  <strong>Penutup</strong><br />
-                  {formData.penutup || '-'}
-                </p>
-
-                {kriteriaList.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold">Kriteria & Standar</h4>
-                    <ul className="list-disc pl-6">
-                      {kriteriaList.map((r, i) => (
-                        <li key={i}>
-                          <strong>{r.kriteria} / {r.standar}</strong> — {r.deskripsi}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {lampiranList.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold">Lampiran</h4>
-                    <ol className="list-decimal pl-6">
-                      {lampiranList.map((l, i) => (
-                        <li key={i}>
-                          {l.nama} ({l.jenis}) {l.link ? `- ${l.link}` : ''}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-
-                {showChart && (
-                  <div>
-                    <h4 className="font-semibold">Grafik Capaian (otomatis)</h4>
-                    <p className="text-sm text-[#8C7A6B]">Tampilan chart placeholder akan sesuai saat integrasi Chart.js.</p>
-                  </div>
-                )}
-              </div>
+            <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
+               {/* Ini Iframe PDF, bukan HTML manual lagi */}
+              <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+               <button onClick={closePreview} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl font-bold">Tutup</button>
+               <button onClick={() => { closePreview(); handleExport('docx'); }} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Download DOCX</button>
             </div>
           </div>
         </div>
