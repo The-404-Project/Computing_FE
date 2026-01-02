@@ -27,7 +27,6 @@ const ArsipSurat = () => {
   // Filter states
   const [search, setSearch] = useState('');
   const [docType, setDocType] = useState('');
-  const [status, setStatus] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -49,12 +48,37 @@ const ArsipSurat = () => {
 
       if (search) params.search = search;
       if (docType) params.doc_type = docType;
-      if (status) params.status = status;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
       const response = await api.get('/dashboard/documents/search', { params });
-      setDocuments(response.data.documents);
+      
+      // Normalize metadata - ensure it's an object, not a string
+      const normalizedDocuments = response.data.documents.map((doc: Document) => {
+        let metadata = doc.metadata;
+        
+        // If metadata is a string, try to parse it
+        if (typeof metadata === 'string') {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch (e) {
+            console.warn('Failed to parse metadata as JSON:', e);
+            metadata = null;
+          }
+        }
+        
+        // If metadata is null or undefined, set to empty object
+        if (!metadata || typeof metadata !== 'object') {
+          metadata = {};
+        }
+        
+        return {
+          ...doc,
+          metadata
+        };
+      });
+      
+      setDocuments(normalizedDocuments);
       setTotalPages(response.data.pagination.totalPages);
       setTotal(response.data.pagination.total);
     } catch (err: any) {
@@ -67,7 +91,7 @@ const ArsipSurat = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, [page, docType, status, dateFrom, dateTo]);
+  }, [page, docType, dateFrom, dateTo]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -112,7 +136,6 @@ const ArsipSurat = () => {
 
       if (search) params.search = search;
       if (docType) params.doc_type = docType;
-      if (status) params.status = status;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
@@ -136,35 +159,111 @@ const ArsipSurat = () => {
     }
   };
 
-  // Get doc type label
-  const getDocTypeLabel = (type: string) => {
-    const labels: { [key: string]: string } = {
+  // Get doc type label - prioritize metadata.jenis_surat for more specific labels
+  const getDocTypeLabel = (doc: Document) => {
+    // Ensure metadata is an object
+    const metadata = doc.metadata && typeof doc.metadata === 'object' ? doc.metadata : {};
+    
+    // First, check if there's a specific jenis_surat in metadata
+    const jenisSurat = metadata.jenis_surat;
+    
+    // Debug logging (can be removed later)
+    if (process.env.NODE_ENV === 'development' && jenisSurat) {
+      console.log('Document jenis_surat:', jenisSurat, 'for doc:', doc.doc_number);
+    }
+    
+    // Normalize jenis_surat for case-insensitive matching
+    const normalizedJenisSurat = typeof jenisSurat === 'string' 
+      ? jenisSurat.toLowerCase().trim() 
+      : jenisSurat;
+    
+    // Mapping for specific jenis_surat values (keys are normalized to lowercase)
+    const specificLabels: { [key: string]: string } = {
+      // Surat Tugas specific types
+      'surat_tugas_dosen': 'Surat Tugas Dosen',
+      'surat_tugas_staf': 'Surat Tugas Staf',
+      'sppd': 'Surat Perintah Perjalanan Dinas (SPPD)',
+      
+      // Surat Undangan specific types
+      'undangan_rapat': 'Undangan Rapat',
+      'undangan_seminar': 'Undangan Seminar',
+      'undangan_kegiatan': 'Undangan Kegiatan',
+      
+      // Surat Pengantar specific types
+      'pengantar_magang': 'Surat Pengantar Magang',
+      'pengantar_penelitian': 'Surat Pengantar Penelitian',
+      'surat_permohonan': 'Surat Permohonan',
+      
+      // Surat Keterangan specific types (from modul3)
+      'surat keterangan aktif kuliah': 'Surat Keterangan Aktif Kuliah',
+      'surat keterangan lulus': 'Surat Keterangan Lulus',
+      'surat keterangan bebas perpustakaan': 'Surat Keterangan Bebas Perpustakaan',
+      'surat keterangan bebas lab': 'Surat Keterangan Bebas Lab',
+      'surat keterangan bebas administrasi': 'Surat Keterangan Bebas Administrasi',
+      'surat keterangan bebas pinjaman': 'Surat Keterangan Bebas Pinjaman',
+      'surat keterangan kelakuan baik': 'Surat Keterangan Kelakuan Baik',
+      'surat keterangan lainnya': 'Surat Keterangan Lainnya',
+      
+      // Surat Keputusan & Edaran specific types
+      'sk_dekan': 'SK Dekan',
+      'sk_panitia': 'SK Panitia',
+      'se_akademik': 'SE Akademik',
+      'se_umum': 'SE Umum',
+      
+      // Surat Prodi specific types
+      'surat rekomendasi mahasiswa': 'Surat Rekomendasi Mahasiswa',
+      'surat persetujuan krs': 'Surat Persetujuan KRS',
+      'surat tugas pembimbing akademik': 'Surat Tugas Pembimbing Akademik',
+      'surat keterangan penelitian/skripsi': 'Surat Keterangan Penelitian/Skripsi',
+      
+      // Surat LAAK specific types
+      'surat permohonan akreditasi': 'Surat Permohonan Akreditasi',
+      'laporan audit internal': 'Laporan Audit Internal',
+      'surat tindak lanjut audit': 'Surat Tindak Lanjut Audit',
+      'berita acara visitasi': 'Berita Acara Visitasi',
+      
+      // Surat Pengantar additional types (from template management)
+      'surat_pengantar_a': 'Surat Pengantar A',
+      'surat_pengantar_b': 'Surat Pengantar B',
+    };
+    
+    // If jenis_surat exists in metadata, use it
+    if (normalizedJenisSurat && specificLabels[normalizedJenisSurat]) {
+      return specificLabels[normalizedJenisSurat];
+    }
+    
+    // If jenis_surat exists but not in mapping, format it nicely
+    if (jenisSurat && typeof jenisSurat === 'string') {
+      // Handle template_ prefix
+      if (jenisSurat.toLowerCase().startsWith('template_')) {
+        return metadata.template_name || 'Template Kustom';
+      }
+      // If already has spaces and proper capitalization, return as is
+      if (jenisSurat.includes(' ') && /^[A-Z]/.test(jenisSurat.trim())) {
+        return jenisSurat.trim();
+      }
+      // Format the string: replace underscores/slashes with spaces and capitalize
+      return jenisSurat
+        .replace(/[_\//]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+        .trim();
+    }
+    
+    // Fallback to doc_type mapping
+    const generalLabels: { [key: string]: string } = {
       surat_tugas: 'Surat Tugas',
       surat_undangan: 'Surat Undangan',
       surat_keterangan: 'Surat Keterangan',
       surat_pengantar: 'Surat Pengantar',
+      surat_permohonan: 'Surat Permohonan',
       surat_keputusan: 'Surat Keputusan',
       surat_prodi: 'Surat Prodi',
       surat_laak: 'Surat LAAK',
     };
-    return labels[type] || type;
-  };
-
-  // Get status badge color
-  const getStatusBadgeColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-      case 'generated':
-        return 'bg-green-100 text-green-800';
-      case 'sent':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+    
+    return generalLabels[doc.doc_type] || doc.doc_type;
   };
 
   // Format date
@@ -181,7 +280,6 @@ const ArsipSurat = () => {
   const handleResetFilters = () => {
     setSearch('');
     setDocType('');
-    setStatus('');
     setDateFrom('');
     setDateTo('');
     setPage(1);
@@ -244,26 +342,6 @@ const ArsipSurat = () => {
               <option value="surat_keputusan">Surat Keputusan</option>
               <option value="surat_prodi">Surat Prodi</option>
               <option value="surat_laak">Surat LAAK</option>
-            </select>
-          </div>
-
-          {/* Filter: Status */}
-          <div>
-            <label className="block text-sm font-semibold mb-1" style={{ color: '#374151' }}>
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setPage(1);
-              }}
-              className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ borderColor: '#d1d5db' }}
-            >
-              <option value="">Semua Status</option>
-              <option value="draft">Draft</option>
-              <option value="generated">Generated</option>
             </select>
           </div>
 
@@ -331,9 +409,6 @@ const ArsipSurat = () => {
                   Jenis
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: '#6b7280' }}>
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: '#6b7280' }}>
                   Pembuat
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: '#6b7280' }}>
@@ -347,13 +422,13 @@ const ArsipSurat = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center" style={{ color: '#6b7280' }}>
+                  <td colSpan={5} className="px-6 py-4 text-center" style={{ color: '#6b7280' }}>
                     Memuat data...
                   </td>
                 </tr>
               ) : documents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center" style={{ color: '#6b7280' }}>
+                  <td colSpan={5} className="px-6 py-4 text-center" style={{ color: '#6b7280' }}>
                     Tidak ada dokumen ditemukan
                   </td>
                 </tr>
@@ -364,10 +439,7 @@ const ArsipSurat = () => {
                       {doc.doc_number}
                     </td>
                     <td className="px-6 py-4 text-sm" style={{ color: '#6b7280' }}>
-                      {getDocTypeLabel(doc.doc_type)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadgeColor(doc.status)}`}>{doc.status.toUpperCase()}</span>
+                      {getDocTypeLabel(doc)}
                     </td>
                     <td className="px-6 py-4 text-sm" style={{ color: '#6b7280' }}>
                       {doc.created_by?.full_name || doc.created_by?.username || '-'}
