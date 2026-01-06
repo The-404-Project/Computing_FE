@@ -78,7 +78,7 @@ export default function SuratProdi() {
   // Preview & Export
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -265,41 +265,57 @@ export default function SuratProdi() {
 
   const handlePreview = async () => {
     try {
-      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
-      let currentUserName = ""
-      let currentUserRole = ""
-      if (userRaw) {
-        try {
-          const u = JSON.parse(userRaw) as { fullName?: string; username?: string; role?: string }
-          currentUserName = u.fullName || u.username || ""
-          currentUserRole = u.role || ""
-        } catch {
-          // Ignore parse error - use default empty values
-        }
+      setLoadingFormat('preview')
+      
+      // Validasi minimal
+      if (!formData.nim || !formData.jenisSurat) {
+        alert('NIM dan Jenis Surat harus diisi untuk preview')
+        setLoadingFormat(null)
+        return
       }
-      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
-      const formatDateID = (d: Date) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+
+      // Convert jenis surat ke lowercase sesuai dengan templateMap di backend
+      const jenisSuratLower = formData.jenisSurat.toLowerCase().trim()
 
       const payload = {
-        nomorSurat: formData.nomorRegistrasi,
+        nomorSurat: formData.nomorRegistrasi || 'XXX/PREVIEW/2025',
         nim: formData.nim,
-        jenis_surat: formData.jenisSurat,
-        namaDosen: formData.namaDosen,
-        nipDosen: formData.nipDosen,
-        judulPenelitian: formData.judulPenelitian,
-        keterangan: formData.keterangan,
-        kota: "Bandung",
-        tanggal: formatDateID(new Date()),
-        nama_user: currentUserName,
-        role: currentUserRole,
+        jenis_surat: jenisSuratLower,
+        namaDosen: formData.namaDosen || '',
+        nipDosen: formData.nipDosen || '',
+        judulPenelitian: formData.judulPenelitian || '',
+        keterangan: formData.keterangan || '',
+      }
+
+      // Get token for authorization
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
       }
 
       const response = await fetch('http://localhost:4000/api/surat-prodi/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       })
-      if (!response.ok) throw new Error('Gagal memuat preview')
+
+      if (!response.ok) {
+        let errorMessage = 'Gagal memuat preview'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorData.error || errorMessage
+        } catch {
+          // If not JSON, try text
+          try {
+            const errorText = await response.text()
+            errorMessage = errorText || errorMessage
+          } catch {
+            // Use default
+          }
+        }
+        throw new Error(errorMessage)
+      }
 
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
@@ -307,57 +323,85 @@ export default function SuratProdi() {
       setShowPreviewModal(true)
     } catch (err: unknown) {
       const error = err as { message?: string }
-      alert(error?.message ? String(error.message) : 'Gagal membuat preview')
+      alert(`Preview Gagal: ${error?.message || 'Gagal membuat preview'}`)
+    } finally {
+      setLoadingFormat(null)
+    }
+  }
+
+  const closePreview = () => {
+    setShowPreviewModal(false)
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
     }
   }
 
   const handleExport = async (format: "docx" | "pdf") => {
     try {
-      if (!docId && docStatus !== 'approved' && docStatus !== 'draft') {
-        setErrorMessage('Surat harus dalam status approved atau draft untuk di-generate')
-        setShowErrorPopup(true)
+      setLoadingFormat(format)
+
+      // Validasi minimal
+      if (!formData.nim || !formData.jenisSurat) {
+        alert('NIM dan Jenis Surat harus diisi untuk export')
+        setLoadingFormat(null)
         return
       }
 
-      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
-      let currentUserName = ""
-      let currentUserRole = ""
-      if (userRaw) {
-        try {
-          const u = JSON.parse(userRaw) as { fullName?: string; username?: string; role?: string }
-          currentUserName = u.fullName || u.username || ""
-          currentUserRole = u.role || ""
-        } catch {
-          // Ignore parse error - use default empty values
-        }
-      }
-      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
-      const formatDateID = (d: Date) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+      // Convert jenis surat ke lowercase sesuai dengan templateMap di backend
+      const jenisSuratLower = formData.jenisSurat.toLowerCase().trim()
 
       const payload = {
-        doc_id: docId,
-        nomorSurat: formData.nomorRegistrasi,
+        doc_id: docId || null,
+        nomorSurat: formData.nomorRegistrasi || '',
         nim: formData.nim,
-        jenis_surat: formData.jenisSurat,
-        namaDosen: formData.namaDosen,
-        nipDosen: formData.nipDosen,
-        judulPenelitian: formData.judulPenelitian,
-        keterangan: formData.keterangan,
-        kota: "Bandung",
-        tanggal: formatDateID(new Date()),
-        nama_user: currentUserName,
-        role: currentUserRole,
+        jenis_surat: jenisSuratLower,
+        namaDosen: formData.namaDosen || '',
+        nipDosen: formData.nipDosen || '',
+        judulPenelitian: formData.judulPenelitian || '',
+        keterangan: formData.keterangan || '',
+      }
+
+      // Get token for authorization
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
       }
 
       const response = await fetch(`http://localhost:4000/api/surat-prodi/generate?format=${format}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) throw new Error('Gagal export dokumen')
+      if (!response.ok) {
+        // Try to get error message from response
+        const contentType = response.headers.get('content-type')
+        let errorMessage = 'Gagal export dokumen'
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json()
+            errorMessage = errorData.message || errorData.error || errorMessage
+          } else {
+            const errorText = await response.text()
+            errorMessage = errorText || errorMessage
+          }
+        } catch {
+          // If parsing fails, use default message
+        }
+        throw new Error(errorMessage)
+      }
 
       const blob = await response.blob()
+
+      // Check if response is actually an error (sometimes backend returns JSON error but status is 200)
+      if (blob.type === 'application/json') {
+        const errorText = await blob.text()
+        const errorData = JSON.parse(errorText)
+        throw new Error(errorData.message || errorData.error || 'Gagal export dokumen')
+      }
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -370,12 +414,14 @@ export default function SuratProdi() {
       // Hapus Draft & Reset Status Simpan
       localStorage.removeItem(DRAFT_KEY)
       setSaveStatus('idle')
-      setShowSuccessPopup(false)
       setDocStatus('generated')
+
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh & Draft dihapus.`)
     } catch (err: unknown) {
       const error = err as { message?: string }
-      alert(error?.message ? String(error.message) : 'Gagal export dokumen')
-      setShowSuccessPopup(false)
+      alert(`Gagal: ${error?.message || 'Gagal export dokumen'}`)
+    } finally {
+      setLoadingFormat(null)
     }
   }
 
@@ -656,6 +702,9 @@ export default function SuratProdi() {
                     <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setFormData((prev) => ({ ...prev, jenisSurat: "Surat Keterangan Penelitian/Skripsi" })); setShowDropdown(false) }}>
                       Surat Keterangan Penelitian/Skripsi
                     </button>
+                    <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setFormData((prev) => ({ ...prev, jenisSurat: "Surat Program Studi" })); setShowDropdown(false) }}>
+                      Surat Program Studi
+                    </button>
                   </div>
                 )}
               </div>
@@ -692,7 +741,8 @@ export default function SuratProdi() {
             {(!docStatus || docStatus === 'draft') && (
               <button
                 onClick={handleSubmit}
-                className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all"
+                disabled={loadingFormat !== null}
+                className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: colors.semantic.info, color: 'white' }}
               >
                 <Send className="w-4 h-4" />
@@ -701,74 +751,55 @@ export default function SuratProdi() {
             )}
             <button
               onClick={handlePreview}
-              className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all"
+              disabled={loadingFormat !== null}
+              className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
             >
               <Eye className="w-4 h-4" />
-              Preview Dokumen
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview Dokumen'}
             </button>
-            {(docStatus === 'approved' || docStatus === 'draft') && (
-              <button
-                onClick={() => setShowSuccessPopup(true)}
-                className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-lg hover:opacity-80 transition-all"
-                style={{ backgroundColor: colors.primary.main }}
-              >
-                <FileText className="w-4 h-4" />
-                Generate Dokumen
-              </button>
-            )}
+            <button
+              onClick={() => handleExport('docx')}
+              disabled={loadingFormat !== null}
+              className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
+            >
+              <FileText className="w-4 h-4" />
+              {loadingFormat === 'docx' ? 'Processing...' : 'Export DOCX'}
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={loadingFormat !== null}
+              className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: colors.primary.main }}
+            >
+              <Download className="w-4 h-4" />
+              {loadingFormat === 'pdf' ? 'Processing...' : 'Export PDF'}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Preview Modal */}
       {showPreviewModal && previewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: `${colors.neutral.black}66` }}>
-          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center p-4 border-b">
               <h3 className="text-lg font-bold">Preview Dokumen</h3>
-              <button onClick={() => { setShowPreviewModal(false); if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">
+              <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">
                 &times;
               </button>
             </div>
             <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
               <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Popup - Export Format */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: `${colors.neutral.black}33` }}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-6">
-            <div className="flex justify-end">
-              <button onClick={() => setShowSuccessPopup(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: `${colors.primary.main}20` }}>
-                <FileText className="w-8 h-8" style={{ color: colors.primary.main }} />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800">Pilih Format Dokumen</h3>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => handleExport("docx")}
-                className="flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all"
-                style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
+            <div className="p-4 border-t flex justify-end">
+              <button 
+                onClick={closePreview} 
+                className="px-6 py-2.5 font-medium rounded-lg hover:opacity-80 transition-all"
+                style={{ backgroundColor: colors.primary.main, color: 'white' }}
               >
-                <FileText className="w-5 h-5" />
-                Export DOCX
-              </button>
-              <button
-                onClick={() => handleExport("pdf")}
-                className="flex items-center justify-center gap-2 px-6 py-3 text-white font-medium rounded-lg hover:opacity-80 transition-all"
-                style={{ backgroundColor: colors.primary.main }}
-              >
-                <Download className="w-5 h-5" />
-                Export PDF
+                Done
               </button>
             </div>
           </div>
