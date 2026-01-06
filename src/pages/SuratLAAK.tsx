@@ -5,6 +5,7 @@ interface KriteriaRow {
   kriteria: string;
   standar: string;
   deskripsi: string;
+  nilai: string;
 }
 
 interface LampiranRow {
@@ -13,22 +14,29 @@ interface LampiranRow {
   link: string;
 }
 
+interface ReferensiRow {
+  referensi: string;
+}
+
 interface FormData {
   jenisSurat: string;
   nomorSurat: string;
   perihal: string;
+  tujuan: string;
   unit: string;
   tanggal: string;
-  referensi: string;
   pembuka: string;
   isi: string;
   penutup: string;
 }
 
 const romanMonths = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
-const pad = (n: number, len = 3) => String(n).padStart(len, '0');
-
-// Key LocalStorage untuk Draft
+const SURAT_CODE_MAP: Record<string, string> = {
+  'Surat Permohonan Akreditasi': 'AKRE',
+  'Laporan Audit Internal': 'AUDIT',
+  'Surat Tindak Lanjut Audit': 'TLA',
+  'Berita Acara Visitasi': 'BAV'
+};
 const DRAFT_KEY = 'surat_laak_draft_v1';
 
 const SuratLAAK = () => {
@@ -37,22 +45,27 @@ const SuratLAAK = () => {
     jenisSurat: 'Surat Permohonan Akreditasi',
     nomorSurat: '',
     perihal: '',
+    tujuan: '',
     unit: '',
     tanggal: '',
-    referensi: '',
     pembuka: '',
     isi: '',
     penutup: ''
   });
 
   const [kriteriaList, setKriteriaList] = useState<KriteriaRow[]>([
-    { kriteria: 'Kriteria 1', standar: 'Standar 1', deskripsi: 'Dokumentasi & bukti pendukung' },
-    { kriteria: 'Kriteria 2', standar: 'Standar 2', deskripsi: 'Hasil evaluasi capaian' },
+    { kriteria: 'Kriteria 1', standar: 'Standar 1', deskripsi: 'Dokumentasi & bukti pendukung', nilai: 'Baik' },
+    { kriteria: 'Kriteria 2', standar: 'Standar 2', deskripsi: 'Hasil evaluasi capaian', nilai: 'Cukup' },
   ]);
 
   const [lampiranList, setLampiranList] = useState<LampiranRow[]>([
     { nama: 'Daftar APT', jenis: 'APT', link: '' },
     { nama: 'Daftar APM', jenis: 'APM', link: '' },
+  ]);
+
+  const [referensiList, setReferensiList] = useState<ReferensiRow[]>([
+    { referensi: 'Pedoman BAN-PT' },
+    { referensi: 'Instruksi Dekan' },
   ]);
 
   // --- 2. STATE UI & SYSTEM ---
@@ -77,6 +90,7 @@ const SuratLAAK = () => {
         if (parsed.formData) setFormData(parsed.formData);
         if (parsed.kriteriaList) setKriteriaList(parsed.kriteriaList);
         if (parsed.lampiranList) setLampiranList(parsed.lampiranList);
+        if (parsed.referensiList) setReferensiList(parsed.referensiList);
         
         setIsDraftLoaded(true);
         setTimeout(() => setIsDraftLoaded(false), 3000);
@@ -101,13 +115,13 @@ const SuratLAAK = () => {
 
     setSaveStatus('saving');
     const timer = setTimeout(() => {
-      const objectToSave = { formData, kriteriaList, lampiranList };
+      const objectToSave = { formData, kriteriaList, lampiranList, referensiList };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
       setSaveStatus('saved');
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [formData, kriteriaList, lampiranList, isSystemReady]);
+  }, [formData, kriteriaList, lampiranList, referensiList, isSystemReady]);
 
 
   // --- 5. HANDLERS ---
@@ -131,21 +145,45 @@ const SuratLAAK = () => {
     });
   };
 
-  const addKriteria = () => setKriteriaList(prev => [...prev, { kriteria: '', standar: '', deskripsi: '' }]);
+  const handleReferensiChange = (index: number, field: keyof ReferensiRow, value: string) => {
+    setReferensiList(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const addKriteria = () => setKriteriaList(prev => [...prev, { kriteria: '', standar: '', deskripsi: '', nilai: '' }]);
   const removeKriteria = (index: number) => setKriteriaList(prev => prev.filter((_, i) => i !== index));
 
   const addLampiran = () => setLampiranList(prev => [...prev, { nama: '', jenis: '', link: '' }]);
   const removeLampiran = (index: number) => setLampiranList(prev => prev.filter((_, i) => i !== index));
 
-  const generateNumber = () => {
-    const urut = Math.floor(Date.now() % 10000);
-    const univ = (formData.unit || 'UNIV').split(' ').map(s => s.toUpperCase()).slice(0, 1).join('');
-    const fak = 'FI';
-    const now = new Date();
-    const m = romanMonths[now.getMonth()];
-    const y = now.getFullYear();
-    const nomor = `${pad(urut, 3)}/${univ}/${fak}/LAAK/AKRE/${m}/${y}`;
-    setFormData(prev => ({ ...prev, nomorSurat: nomor }));
+  const addReferensi = () => setReferensiList(prev => [...prev, { referensi: '' }]);
+  const removeReferensi = (index: number) => setReferensiList(prev => prev.filter((_, i) => i !== index));
+
+  const generateNumber = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/surat-laak/generate-nomor');
+      if (!response.ok) {
+        throw new Error('Gagal mengambil nomor dari server');
+      }
+      const data = await response.json();
+      const urut = data.nomor; // String "001", "002", etc.
+
+      const univ = (formData.unit || 'UNIV').split(' ').map(s => s.toUpperCase()).slice(0, 1).join('');
+      const fak = 'FIF';
+      const now = new Date();
+      const m = romanMonths[now.getMonth()];
+      const y = now.getFullYear();
+      const code = SURAT_CODE_MAP[formData.jenisSurat];
+      
+      const nomor = `${urut}/${univ}/${fak}/LAAK/${code}/${m}/${y}`;
+      setFormData(prev => ({ ...prev, nomorSurat: nomor }));
+    } catch (error) {
+      console.error('Generate Number Error:', error);
+      alert('Gagal generate nomor surat otomatis.');
+    }
   };
 
   // --- 6. API ACTIONS (CONNECT KE BACKEND) ---
@@ -156,7 +194,8 @@ const SuratLAAK = () => {
     return {
         ...formData,
         kriteriaList,
-        lampiranList
+        lampiranList,
+        referensiList
     };
   };
 
@@ -325,10 +364,10 @@ const SuratLAAK = () => {
                     Generate
                   </button>
                 </div>
-                <p className="text-xs text-[#8C7A6B] mt-2">Format: XXX/UNIV/FAK/LAAK/AKRE/MM/YYYY (otomatis)</p>
+                <p className="text-xs text-[#8C7A6B] mt-2">Format: XXX/UNIV/FAK/LAAK/JENIS/MM/YYYY (otomatis)</p>
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
                 <input
                   type="text"
@@ -336,6 +375,18 @@ const SuratLAAK = () => {
                   value={formData.perihal}
                   onChange={handleChange}
                   placeholder="Permohonan akreditasi program studi ..."
+                  className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tujuan</label>
+                <input
+                  type="text"
+                  name="tujuan"
+                  value={formData.tujuan}
+                  onChange={handleChange}
+                  placeholder="Seluruh Pimpinan Perguruan Tinggi ..."
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none transition-all"
                 />
               </div>
@@ -386,6 +437,7 @@ const SuratLAAK = () => {
                     <th className="px-4 py-3 text-sm text-[#6B5E54]">Kriteria</th>
                     <th className="px-4 py-3 text-sm text-[#6B5E54]">Standar</th>
                     <th className="px-4 py-3 text-sm text-[#6B5E54]">Deskripsi</th>
+                    <th className="px-4 py-3 text-sm text-[#6B5E54]">Nilai</th>
                     <th className="px-4 py-3 text-sm text-[#6B5E54] w-24"></th>
                   </tr>
                 </thead>
@@ -420,6 +472,18 @@ const SuratLAAK = () => {
                         />
                       </td>
                       <td className="px-4 py-2">
+                        <select
+                          value={row.nilai}
+                          onChange={e => handleKriteriaChange(idx, 'nilai', e.target.value)}
+                          className="w-full border border-transparent focus:border-[#B28D35] rounded-md p-2 bg-white"
+                        >
+                          <option value="">Pilih Nilai</option>
+                          {NILAI_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-2">
                         <button
                           onClick={() => removeKriteria(idx)}
                           className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
@@ -432,6 +496,48 @@ const SuratLAAK = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Grafik Data Akreditasi */}
+            <div className="flex items-center justify-between mb-4 mt-6">
+              <h2 className="text-xl font-bold text-[#2D241E] flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+                Grafik Data Akreditasi
+              </h2>
+              <button
+                onClick={() => setShowChart(prev => !prev)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all shadow-sm border ${showChart ? 'bg-[#B28D35] text-white border-[#B28D35] hover:bg-[#96762B]' : 'bg-white text-[#6B5E54] border-[#E5DED5] hover:bg-[#F9F7F4]'}`}
+                aria-pressed={showChart}
+                title={showChart ? 'Tutup Grafik' : 'Tampilkan Grafik'}
+              >
+                {showChart ? 'Tutup Grafik' : 'Tampilkan Grafik'}
+              </button>
+            </div>
+
+            {showChart && (
+              <div className="mt-4 bg-[#FDFBF7] rounded-xl border border-[#F2EFE9] p-6">
+                <p className="text-sm text-[#8C7A6B]">
+                  Grafik Data Akreditasi berdasarkan input Kriteria dan Nilai.
+                </p>
+                <div className="mt-3 flex items-end gap-4">
+                  {kriteriaList.map((row, i) => {
+                    const v = NILAI_MAP[row.nilai] ?? 0;
+                    const indexLabel = `${row.kriteria} (${row.nilai})`;
+
+                    return (
+                      <div key={i} className="flex flex-col items-center">
+                        <div
+                          className="w-8 bg-[#B28D35]/70 rounded-t-md"
+                          style={{ height: `${v * 1.5}px` }}
+                        />
+                        <span className="text-xs text-[#6B5E54] mt-1">{indexLabel}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="h-px bg-[#F2EFE9] my-10"></div>
 
             {/* Lampiran */}
             <div className="flex items-center justify-between mb-4">
@@ -453,7 +559,7 @@ const SuratLAAK = () => {
                   <tr>
                     <th className="px-4 py-3 text-sm text-[#6B5E54]">Nama Lampiran</th>
                     <th className="px-4 py-3 text-sm text-[#6B5E54]">Jenis</th>
-                    <th className="px-4 py-3 text-sm text-[#6B5E54]">Aksi Upload / Link</th>
+                    <th className="px-4 py-3 text-sm text-[#6B5E54]">Link</th>
                     <th className="px-4 py-3 text-sm text-[#6B5E54] w-24"></th>
                   </tr>
                 </thead>
@@ -501,51 +607,54 @@ const SuratLAAK = () => {
               </table>
             </div>
 
-            {/* Grafik & Referensi */}
+            <div className="h-px bg-[#F2EFE9] my-10"></div>
+
+            {/* Referensi Dokumen Pendukung */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-[#2D241E] flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
-                  Grafik & Referensi
-                </h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-semibold text-[#6B5E54]">Generate Grafik</label>
-                <input type="checkbox" checked={showChart} onChange={e => setShowChart(e.target.checked)} />
-              </div>
+              <h2 className="text-xl font-bold text-[#2D241E] flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
+                Referensi Dokumen Pendukung
+              </h2>
+              <button
+                onClick={addReferensi}
+                className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
+              >
+                + Tambah Referensi
+              </button>
             </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Referensi Dokumen Pendukung</label>
-              <textarea
-                name="referensi"
-                value={formData.referensi}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Contoh: Pedoman BAN-PT, Instruksi Dekan, dsb."
-                className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none resize-none transition-all"
-              ></textarea>
-            </div>
-
-            {showChart && (
-              <div className="mt-4 bg-[#FDFBF7] rounded-xl border border-[#F2EFE9] p-6">
-                <p className="text-sm text-[#8C7A6B]">
-                  Grafik Capaian (placeholder). Integrasi Chart.js dapat ditambahkan jika diperlukan.
-                </p>
-                <div className="mt-3 grid grid-cols-4 gap-3 items-end">
-                  {[30, 55, 75, 40].map((v, i) => (
-                    <div key={i} className="flex flex-col items-center">
-                      <div
-                        className="w-8 bg-[#B28D35]/70 rounded-t-md"
-                        style={{ height: `${v * 1.5}px` }}
-                        title={`Kriteria ${i + 1}: ${v}%`}
-                      />
-                      <span className="text-xs text-[#6B5E54] mt-1">K{i + 1}</span>
-                    </div>
+            <div className="overflow-x-auto border border-[#F2EFE9] rounded-xl mb-8">
+              <table className="min-w-full text-left">
+                <thead className="bg-[#FDFBF7]">
+                  <tr>
+                    <th className="px-4 py-3 text-sm text-[#6B5E54]">Referensi</th>
+                    <th className="px-4 py-3 text-sm text-[#6B5E54] w-24"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {referensiList.map((row, idx) => (
+                    <tr key={idx} className="border-t border-[#F2EFE9]">
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={row.referensi}
+                          onChange={e => handleReferensiChange(idx, 'referensi', e.target.value)}
+                          placeholder="Contoh: Pedoman BAN-PT, Instruksi Dekan, dsb."
+                          className="w-full border border-transparent focus:border-[#B28D35] rounded-md p-2 bg-white"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => removeReferensi(idx)}
+                          className="px-3 py-2 bg-white border border-[#E5DED5] text-[#6B5E54] font-semibold rounded-lg hover:bg-[#F9F7F4] transition-all shadow-sm"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-            )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Konten Surat */}
             <div className="h-px bg-[#F2EFE9] my-10"></div>
@@ -620,3 +729,11 @@ const SuratLAAK = () => {
 };
 
 export default SuratLAAK;
+const NILAI_OPTIONS = ['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Tidak Memenuhi'];
+const NILAI_MAP: Record<string, number> = {
+  'Sangat Baik': 100,
+  'Baik': 75,
+  'Cukup': 50,
+  'Kurang': 25,
+  'Tidak Memenuhi': 5,
+};

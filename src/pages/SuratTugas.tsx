@@ -204,7 +204,7 @@ const SuratTugas = () => {
               disabled={loadingFormat !== null}
               className="px-5 py-2.5 bg-white border border-[#B28D35] text-[#B28D35] font-semibold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
             >
-              {loadingFormat === 'preview' ? 'Loading...' : '👁️ Preview'}
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview'}
             </button>
 
             <button
