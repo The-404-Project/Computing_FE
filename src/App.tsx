@@ -8,7 +8,6 @@ import SuratUndangan from './pages/SuratUndangan';
 import SuratKeputusanSuratEdaran from './pages/SuratKeputusanSuratEdaran';
 import SuratKeterangan from './pages/SuratKeterangan';
 import SuratProdi from './pages/SuratProdi';
-import ComingSoon from './pages/ComingSoon';
 import ArsipSurat from './pages/ArsipSurat';
 import SuratLAAK from './pages/SuratLAAK';
 import TemplateManagement from './pages/TemplateManagement';

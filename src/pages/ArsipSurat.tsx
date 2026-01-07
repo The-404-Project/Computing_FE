@@ -193,7 +193,7 @@ const ArsipSurat = () => {
     }
 
     // Debug logging (can be removed later)
-    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development' && jenisSurat) {
+    if (import.meta.env.DEV && jenisSurat) {
       console.log('Document jenis_surat:', jenisSurat, 'for doc:', doc.doc_number);
     }
 

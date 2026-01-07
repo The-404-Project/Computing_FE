@@ -7,7 +7,7 @@ interface LoginProps {
   onNavigateToRegister?: () => void;
 }
 
-const Login = ({ onLoginSuccess, onNavigateToRegister }: LoginProps) => {
+const Login = ({ onLoginSuccess, onNavigateToRegister: _onNavigateToRegister }: LoginProps) => {
   // Ganti Email jadi Username sesuai Backend
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

@@ -40,7 +40,6 @@ export default function SuratKeterangan() {
   const [statusMahasiswa, setStatusMahasiswa] = useState("")
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [searchMessage, setSearchMessage] = useState<string | null>(null)
-  const [generatedFile, setGeneratedFile] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [existingFile, setExistingFile] = useState<string | null>(null)
   const [hasMahasiswaData, setHasMahasiswaData] = useState(false)
@@ -300,7 +299,6 @@ export default function SuratKeterangan() {
           const status = err?.response?.status
           const data = err?.response?.data || {}
           const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
-          setGeneratedFile(null)
           setExistingFile(data && data.file ? String(data.file) : null)
           setShowSuccessPopup(false)
           setErrorMessage(msg)

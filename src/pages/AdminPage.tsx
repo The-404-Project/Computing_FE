@@ -14,7 +14,7 @@ interface AdminPageProps {
   onBack?: () => void;
 }
 
-const AdminPage = ({ onBack }: AdminPageProps) => {
+const AdminPage = ({ onBack: _onBack }: AdminPageProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
