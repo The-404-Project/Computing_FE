@@ -52,11 +52,11 @@ const ArsipSurat = () => {
       if (dateTo) params.date_to = dateTo;
 
       const response = await api.get('/dashboard/documents/search', { params });
-      
+
       // Normalize metadata - ensure it's an object, not a string
       const normalizedDocuments = response.data.documents.map((doc: Document) => {
         let metadata = doc.metadata;
-        
+
         // If metadata is a string, try to parse it
         if (typeof metadata === 'string') {
           try {
@@ -66,18 +66,18 @@ const ArsipSurat = () => {
             metadata = null;
           }
         }
-        
+
         // If metadata is null or undefined, set to empty object
         if (!metadata || typeof metadata !== 'object') {
           metadata = {};
         }
-        
+
         return {
           ...doc,
-          metadata
+          metadata,
         };
       });
-      
+
       setDocuments(normalizedDocuments);
       setTotalPages(response.data.pagination.totalPages);
       setTotal(response.data.pagination.total);
@@ -163,37 +163,60 @@ const ArsipSurat = () => {
   const getDocTypeLabel = (doc: Document) => {
     // Ensure metadata is an object
     const metadata = doc.metadata && typeof doc.metadata === 'object' ? doc.metadata : {};
-    
+
     // First, check if there's a specific jenis_surat in metadata
-    const jenisSurat = metadata.jenis_surat;
-    
+    let jenisSurat = metadata.jenis_surat;
+
+    // Fallback: if jenis_surat doesn't exist, try to derive from docType
+    if (!jenisSurat && metadata.docType) {
+      const docTypeMap: { [key: string]: string } = {
+        'SK_DEKAN': 'sk_dekan',
+        'SK_PANITIA': 'sk_panitia',
+        'SE_AKADEMIK': 'se_akademik',
+        'SE_UMUM': 'se_umum',
+      };
+      jenisSurat = docTypeMap[metadata.docType] || null;
+    }
+
+    // Fallback: if still not found, try to derive from templateName
+    if (!jenisSurat && metadata.templateName) {
+      const templateName = String(metadata.templateName).toLowerCase();
+      if (templateName.includes('keputusan_dekan')) {
+        jenisSurat = 'sk_dekan';
+      } else if (templateName.includes('keputusan_panitia')) {
+        jenisSurat = 'sk_panitia';
+      } else if (templateName.includes('edaran_akademik')) {
+        jenisSurat = 'se_akademik';
+      } else if (templateName.includes('edaran_umum')) {
+        jenisSurat = 'se_umum';
+      }
+    }
+
     // Debug logging (can be removed later)
-    if (process.env.NODE_ENV === 'development' && jenisSurat) {
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development' && jenisSurat) {
       console.log('Document jenis_surat:', jenisSurat, 'for doc:', doc.doc_number);
     }
-    
+
     // Normalize jenis_surat for case-insensitive matching
-    const normalizedJenisSurat = typeof jenisSurat === 'string' 
-      ? jenisSurat.toLowerCase().trim() 
-      : jenisSurat;
-    
+    const normalizedJenisSurat = typeof jenisSurat === 'string' ? jenisSurat.toLowerCase().trim() : jenisSurat;
+
     // Mapping for specific jenis_surat values (keys are normalized to lowercase)
     const specificLabels: { [key: string]: string } = {
       // Surat Tugas specific types
-      'surat_tugas_dosen': 'Surat Tugas Dosen',
-      'surat_tugas_staf': 'Surat Tugas Staf',
-      'sppd': 'Surat Perintah Perjalanan Dinas (SPPD)',
-      
+      surat_tugas_dosen: 'Surat Tugas Dosen',
+      surat_tugas_staf: 'Surat Tugas Staf',
+      sppd: 'Surat Perintah Perjalanan Dinas (SPPD)',
+
       // Surat Undangan specific types
-      'undangan_rapat': 'Undangan Rapat',
-      'undangan_seminar': 'Undangan Seminar',
-      'undangan_kegiatan': 'Undangan Kegiatan',
-      
+      undangan_rapat: 'Undangan Rapat',
+      undangan_seminar: 'Undangan Seminar',
+      undangan_kegiatan: 'Undangan Kegiatan',
+
       // Surat Pengantar specific types
-      'pengantar_magang': 'Surat Pengantar Magang',
-      'pengantar_penelitian': 'Surat Pengantar Penelitian',
-      'surat_permohonan': 'Surat Permohonan',
-      
+      pengantar_magang: 'Surat Pengantar Magang',
+      pengantar_penelitian: 'Surat Pengantar Penelitian',
+      surat_permohonan: 'Surat Permohonan',
+
       // Surat Keterangan specific types (from modul3)
       'surat keterangan aktif kuliah': 'Surat Keterangan Aktif Kuliah',
       'surat keterangan lulus': 'Surat Keterangan Lulus',
@@ -203,35 +226,35 @@ const ArsipSurat = () => {
       'surat keterangan bebas pinjaman': 'Surat Keterangan Bebas Pinjaman',
       'surat keterangan kelakuan baik': 'Surat Keterangan Kelakuan Baik',
       'surat keterangan lainnya': 'Surat Keterangan Lainnya',
-      
+
       // Surat Keputusan & Edaran specific types
-      'sk_dekan': 'SK Dekan',
-      'sk_panitia': 'SK Panitia',
-      'se_akademik': 'SE Akademik',
-      'se_umum': 'SE Umum',
-      
+      sk_dekan: 'SK Dekan',
+      sk_panitia: 'SK Panitia',
+      se_akademik: 'SE Akademik',
+      se_umum: 'SE Umum',
+
       // Surat Prodi specific types
       'surat rekomendasi mahasiswa': 'Surat Rekomendasi Mahasiswa',
       'surat persetujuan krs': 'Surat Persetujuan KRS',
       'surat tugas pembimbing akademik': 'Surat Tugas Pembimbing Akademik',
       'surat keterangan penelitian/skripsi': 'Surat Keterangan Penelitian/Skripsi',
-      
+
       // Surat LAAK specific types
       'surat permohonan akreditasi': 'Surat Permohonan Akreditasi',
       'laporan audit internal': 'Laporan Audit Internal',
       'surat tindak lanjut audit': 'Surat Tindak Lanjut Audit',
       'berita acara visitasi': 'Berita Acara Visitasi',
-      
+
       // Surat Pengantar additional types (from template management)
-      'surat_pengantar_a': 'Surat Pengantar A',
-      'surat_pengantar_b': 'Surat Pengantar B',
+      surat_pengantar_a: 'Surat Pengantar A',
+      surat_pengantar_b: 'Surat Pengantar B',
     };
-    
+
     // If jenis_surat exists in metadata, use it
     if (normalizedJenisSurat && specificLabels[normalizedJenisSurat]) {
       return specificLabels[normalizedJenisSurat];
     }
-    
+
     // If jenis_surat exists but not in mapping, format it nicely
     if (jenisSurat && typeof jenisSurat === 'string') {
       // Handle template_ prefix
@@ -246,11 +269,11 @@ const ArsipSurat = () => {
       return jenisSurat
         .replace(/[_\//]/g, ' ')
         .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ')
         .trim();
     }
-    
+
     // Fallback to doc_type mapping
     const generalLabels: { [key: string]: string } = {
       surat_tugas: 'Surat Tugas',
@@ -259,10 +282,11 @@ const ArsipSurat = () => {
       surat_pengantar: 'Surat Pengantar',
       surat_permohonan: 'Surat Permohonan',
       surat_keputusan: 'Surat Keputusan',
+      surat_edaran: 'Surat Edaran',
       surat_prodi: 'Surat Prodi',
       surat_laak: 'Surat LAAK',
     };
-    
+
     return generalLabels[doc.doc_type] || doc.doc_type;
   };
 
@@ -340,6 +364,7 @@ const ArsipSurat = () => {
               <option value="surat_keterangan">Surat Keterangan</option>
               <option value="surat_pengantar">Surat Pengantar</option>
               <option value="surat_keputusan">Surat Keputusan</option>
+              <option value="surat_edaran">Surat Edaran</option>
               <option value="surat_prodi">Surat Prodi</option>
               <option value="surat_laak">Surat LAAK</option>
             </select>
