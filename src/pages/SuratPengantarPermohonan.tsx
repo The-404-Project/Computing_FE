@@ -235,15 +235,11 @@ const SuratPengantarPermohonan = () => {
       const payload = constructPayload();
 
       // Request body tetap JSON standard, bukan FormData
-      const response = await fetch('http://34.142.141.96:4000/api/surat-pengantar/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-pengantar/preview', payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal memuat preview');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewModal(true);
@@ -263,15 +259,11 @@ const SuratPengantarPermohonan = () => {
       setLoadingFormat(format);
       const payload = constructPayload();
 
-      const response = await fetch(`http://34.142.141.96:4000/api/surat-pengantar/create?format=${format}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post(`/surat-pengantar/create?format=${format}`, payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal export file.');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

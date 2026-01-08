@@ -152,14 +152,11 @@ export default function SuratKeterangan() {
         role: currentUserRole,
       }
 
-      const response = await fetch('http://34.142.141.96:4000/api/surat-keterangan/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-keterangan/preview', payload, {
+        responseType: 'blob',
       })
-      if (!response.ok) throw new Error('Gagal memuat preview')
-
-      const blob = await response.blob()
+      
+      const blob = response.data
       const url = window.URL.createObjectURL(blob)
       setPreviewUrl(url)
       setShowPreviewModal(true)
@@ -280,13 +277,22 @@ export default function SuratKeterangan() {
           const fileName = data.file
           
           if (fileName) {
-            const url = `http://34.142.141.96:4000/api/surat-keterangan/files/${encodeURIComponent(fileName)}`
-            const a = document.createElement("a")
-            a.href = url
-            a.download = fileName
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
+            try {
+              const fileResponse = await api.get(`/surat-keterangan/files/${encodeURIComponent(fileName)}`, {
+                responseType: 'blob'
+              })
+              const url = window.URL.createObjectURL(fileResponse.data)
+              const a = document.createElement("a")
+              a.href = url
+              a.download = fileName
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              window.URL.revokeObjectURL(url)
+            } catch (e) {
+              console.error("Gagal download file", e)
+              throw new Error("Gagal mengunduh file yang telah digenerate")
+            }
           }
           
           setShowSuccessPopup(false)
@@ -323,14 +329,11 @@ export default function SuratKeterangan() {
         nama_user: currentUserName,
         role: currentUserRole,
       }
-      fetch(`http://34.142.141.96:4000/api/surat-keterangan/create?format=pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      api.post(`/surat-keterangan/create?format=pdf`, payload, {
+        responseType: 'blob'
       })
         .then(async (response) => {
-          if (!response.ok) throw new Error('Gagal export PDF')
-          const blob = await response.blob()
+          const blob = response.data
           const url = window.URL.createObjectURL(blob)
           const a = document.createElement('a')
           a.href = url
@@ -762,14 +765,23 @@ export default function SuratKeterangan() {
             <div className="flex justify-center gap-3">
               {existingFile && (
                 <button
-                  onClick={() => {
-                    const url = `http://34.142.141.96:4000/api/surat-keterangan/files/${encodeURIComponent(existingFile)}`
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = existingFile
-                    document.body.appendChild(a)
-                    a.click()
-                    document.body.removeChild(a)
+                  onClick={async () => {
+                    try {
+                      const fileResponse = await api.get(`/surat-keterangan/files/${encodeURIComponent(existingFile)}`, {
+                        responseType: 'blob'
+                      })
+                      const url = window.URL.createObjectURL(fileResponse.data)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = existingFile
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                      window.URL.revokeObjectURL(url)
+                    } catch (e) {
+                      console.error("Gagal download file", e)
+                      alert("Gagal mengunduh file")
+                    }
                   }}
                   className="px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all"
                   style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}

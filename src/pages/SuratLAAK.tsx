@@ -216,11 +216,8 @@ const SuratLAAK = () => {
 
   const generateNumber = async () => {
     try {
-      const response = await fetch('http://34.142.141.96:4000/api/surat-laak/generate-nomor');
-      if (!response.ok) {
-        throw new Error('Gagal mengambil nomor dari server');
-      }
-      const data = await response.json();
+      const response = await api.get('/surat-laak/generate-nomor');
+      const data = response.data;
       const urut = data.nomor; // String "001", "002", etc.
 
       const univ = (formData.unit || 'UNIV').split(' ').map(s => s.toUpperCase()).slice(0, 1).join('');
@@ -288,15 +285,11 @@ const SuratLAAK = () => {
       const payload = constructPayload();
 
       // Panggil API Preview Backend
-      const response = await fetch('http://34.142.141.96:4000/api/surat-laak/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-laak/preview', payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal memuat preview');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewModal(true);
@@ -313,15 +306,11 @@ const SuratLAAK = () => {
       const payload = constructPayload();
 
       // Panggil API Create Backend
-      const response = await fetch(`http://34.142.141.96:4000/api/surat-laak/create?format=${format}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post(`/surat-laak/create?format=${format}`, payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal export file.');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

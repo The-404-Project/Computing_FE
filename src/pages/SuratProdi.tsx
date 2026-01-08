@@ -319,34 +319,11 @@ export default function SuratProdi() {
         payload.templateName = templateName;
       }
 
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const response = await fetch('http://34.142.141.96:4000/api/surat-prodi/preview', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-prodi/preview', payload, {
+        responseType: 'blob',
       })
-
-      if (!response.ok) {
-        let errorMessage = 'Gagal memuat preview'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.message || errorData.error || errorMessage
-        } catch {
-          try {
-            const errorText = await response.text()
-            errorMessage = errorText || errorMessage
-          } catch {
-          }
-        }
-        throw new Error(errorMessage)
-      }
-
-      const blob = await response.blob()
+      
+      const blob = response.data
       const url = window.URL.createObjectURL(blob)
       setPreviewUrl(url)
       setShowPreviewModal(true)
@@ -407,35 +384,11 @@ export default function SuratProdi() {
         payload.templateName = templateName;
       }
 
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const response = await fetch(`http://34.142.141.96:4000/api/surat-prodi/generate?format=${format}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+      const response = await api.post(`/surat-prodi/generate?format=${format}`, payload, {
+        responseType: 'blob',
       })
 
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type')
-        let errorMessage = 'Gagal export dokumen'
-        try {
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json()
-            errorMessage = errorData.message || errorData.error || errorMessage
-          } else {
-            const errorText = await response.text()
-            errorMessage = errorText || errorMessage
-          }
-        } catch {
-        }
-        throw new Error(errorMessage)
-      }
-
-      const blob = await response.blob()
+      const blob = response.data
 
       if (blob.type === 'application/json') {
         const errorText = await blob.text()

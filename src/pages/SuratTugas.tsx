@@ -117,15 +117,11 @@ const SuratTugas = () => {
     try {
       setLoadingFormat('preview');
       
-      const response = await fetch('http://34.142.141.96:4000/api/surat-tugas/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const response = await api.post('/surat-tugas/preview', formData, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal memuat preview');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewModal(true);
@@ -150,15 +146,11 @@ const SuratTugas = () => {
     try {
       setLoadingFormat(format);
 
-      const response = await fetch(`http://34.142.141.96:4000/api/surat-tugas/create?format=${format}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const response = await api.post(`/surat-tugas/create?format=${format}`, formData, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal export file.');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

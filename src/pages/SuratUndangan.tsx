@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
+import api from '../services/api';
 
 // --- INTERFACES ---
 interface FormData {
@@ -118,15 +119,11 @@ const SuratUndangan = () => {
       setLoadingFormat('preview');
       const payload = { ...formData, list_tamu: recipients };
 
-      const response = await fetch('http://34.142.141.96:4000/api/surat-undangan/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-undangan/preview', payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal memuat preview');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewModal(true);
@@ -152,15 +149,11 @@ const SuratUndangan = () => {
       setLoadingFormat(format);
       const payload = { ...formData, list_tamu: recipients };
 
-      const response = await fetch(`http://34.142.141.96:4000/api/surat-undangan/create?format=${format}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post(`/surat-undangan/create?format=${format}`, payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal export file.');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

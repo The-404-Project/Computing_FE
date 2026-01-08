@@ -469,15 +469,11 @@ export default function SuratKeputusanSuratEdaran() {
       setLoadingFormat('preview');
       const payload = buildPayload();
 
-      const response = await fetch('http://34.142.141.96:4000/api/surat-keputusan/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/surat-keputusan/preview', payload, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Gagal memuat preview');
-
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewModal(true);
@@ -505,22 +501,14 @@ export default function SuratKeputusanSuratEdaran() {
     
     try {
       const endpoint = format === 'docx' 
-        ? 'http://34.142.141.96:4000/api/surat-keputusan/generate-docx'
-        : 'http://34.142.141.96:4000/api/surat-keputusan/generate-pdf';
+        ? '/surat-keputusan/generate-docx'
+        : '/surat-keputusan/generate-pdf';
       
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const res = await api.post(endpoint, payload, {
+        responseType: 'blob',
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        setExportError(`Error: ${text}`);
-        return;
-      }
-
-      const blob = await res.blob();
+      const blob = res.data;
       const filename = `Surat_${docType}_${Date.now()}.${format}`;
       downloadFile(blob, filename);
       
