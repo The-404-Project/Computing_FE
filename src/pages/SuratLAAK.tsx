@@ -38,7 +38,7 @@ interface Template {
   file_path: string;
 }
 
-const romanMonths = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 const SURAT_CODE_MAP: Record<string, string> = {
   'Surat Permohonan Akreditasi': 'AKRE',
   'Laporan Audit Internal': 'AUDIT',
@@ -80,7 +80,7 @@ const SuratLAAK = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
-  
+
   // Chart toggle (UI Only)
   const [showChart, setShowChart] = useState(false);
 
@@ -103,20 +103,20 @@ const SuratLAAK = () => {
         if (parsed.kriteriaList) setKriteriaList(parsed.kriteriaList);
         if (parsed.lampiranList) setLampiranList(parsed.lampiranList);
         if (parsed.referensiList) setReferensiList(parsed.referensiList);
-        
+
         setIsDraftLoaded(true);
         setTimeout(() => setIsDraftLoaded(false), 3000);
       } catch (e) {
         console.error('Gagal load draft', e);
       }
     } else {
-        // Init tanggal default jika tidak ada draft
-        const d = new Date();
-        // Format YYYY-MM-DD untuk input date HTML
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        setFormData(prev => ({ ...prev, tanggal: `${yyyy}-${mm}-${dd}` }));
+      // Init tanggal default jika tidak ada draft
+      const d = new Date();
+      // Format YYYY-MM-DD untuk input date HTML
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      setFormData(prev => ({ ...prev, tanggal: `${yyyy}-${mm}-${dd}` }));
     }
     setIsSystemReady(true);
   }, []);
@@ -228,7 +228,7 @@ const SuratLAAK = () => {
       const now = new Date();
       const m = romanMonths[now.getMonth()];
       const y = now.getFullYear();
-      
+
       // Handle template kustom untuk code
       let code: string;
       if (formData.jenisSurat.startsWith('template_')) {
@@ -240,7 +240,7 @@ const SuratLAAK = () => {
       } else {
         code = SURAT_CODE_MAP[formData.jenisSurat] || 'LAAK';
       }
-      
+
       const nomor = `${urut}/${univ}/${fak}/LAAK/${code}/${m}/${y}`;
       setFormData(prev => ({ ...prev, nomorSurat: nomor }));
     } catch (error) {
@@ -325,18 +325,15 @@ const SuratLAAK = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       const cleanUnit = (formData.unit || 'LAAK').replace(/[^a-zA-Z0-9]/g, '_');
       a.download = `LAAK_${cleanUnit}_${Date.now()}.${format}`;
-      
+
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      // Hapus Draft setelah sukses export (Opsional, style Modul 4)
-      localStorage.removeItem(DRAFT_KEY);
-      setSaveStatus('idle');
       alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
 
     } catch (error: any) {
@@ -354,6 +351,31 @@ const SuratLAAK = () => {
     }
   };
 
+  // --- HANDLE HAPUS DRAFT ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      // Reset Form Data
+      setFormData({
+        jenisSurat: 'Surat Permohonan Akreditasi',
+        nomorSurat: '',
+        perihal: '',
+        tujuan: '',
+        unit: '',
+        tanggal: new Date().toISOString().split('T')[0],
+        pembuka: '',
+        isi: '',
+        penutup: ''
+      });
+      // Reset List ke Default Awal
+      setKriteriaList([{ kriteria: 'Kriteria 1', standar: 'Standar 1', deskripsi: 'Dokumentasi & bukti pendukung', nilai: 'Baik' }]);
+      setLampiranList([{ nama: 'Daftar APT', jenis: 'APT', link: '' }]);
+      setReferensiList([{ referensi: 'Pedoman BAN-PT' }]);
+
+      setSaveStatus('idle');
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
       <div className="max-w-5xl mx-auto">
@@ -363,17 +385,25 @@ const SuratLAAK = () => {
           <div>
             <h1 className="text-3xl font-extrabold text-[#2D241E] tracking-tight">Buat Surat LAAK (Akreditasi & Audit)</h1>
             <div className="flex items-center gap-3 mt-2">
-                <p className="text-[#8C7A6B] text-lg">Dokumen standar BAN-PT/LAM.</p>
-                {/* Indikator Status */}
-                {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold">✨ Draft Load</span>}
-                {saveStatus === 'saving' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">⏳ Menyimpan...</span>}
-                {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">✅ Tersimpan</span>}
+              <p className="text-[#8C7A6B] text-lg">Dokumen standar BAN-PT/LAM.</p>
+              {/* Indikator Status */}
+              {isDraftLoaded && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full animate-bounce font-bold">✨ Draft Load</span>}
+              {saveStatus === 'saving' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">⏳ Menyimpan...</span>}
+              {saveStatus === 'saved' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">✅ Tersimpan</span>}
             </div>
           </div>
 
           <div className="flex gap-3">
-             {/* Tombol Preview Real */}
-             <button
+
+            {/* Tombol Kosongkan Form */}
+            <button
+              onClick={handleDeleteDraft}
+              className="px-5 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 font-semibold rounded-lg hover:bg-rose-100 transition-all shadow-sm flex items-center gap-2"
+            >
+              Kosongkan Form
+            </button>
+            {/* Tombol Preview Real */}
+            <button
               onClick={handlePreview}
               disabled={loadingFormat !== null}
               className="px-5 py-2.5 bg-white border border-[#B28D35] text-[#B28D35] font-semibold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
@@ -425,7 +455,7 @@ const SuratLAAK = () => {
                   <option>Laporan Audit Internal</option>
                   <option>Surat Tindak Lanjut Audit</option>
                   <option>Berita Acara Visitasi</option>
-                  
+
                   {/* Template Kustom dari Database */}
                   {templates.length > 0 && (
                     <>
@@ -811,12 +841,12 @@ const SuratLAAK = () => {
               <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">&times;</button>
             </div>
             <div className="flex-1 bg-gray-50 p-2 overflow-hidden">
-               {/* Ini Iframe PDF, bukan HTML manual lagi */}
+              {/* Ini Iframe PDF, bukan HTML manual lagi */}
               <iframe src={previewUrl} className="w-full h-full rounded-lg border border-gray-200" title="Preview" />
             </div>
             <div className="p-4 border-t flex justify-end gap-3">
-               <button onClick={closePreview} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl font-bold">Tutup</button>
-               <button onClick={() => { closePreview(); handleExport('docx'); }} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Download DOCX</button>
+              <button onClick={closePreview} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl font-bold">Tutup</button>
+              <button onClick={() => { closePreview(); handleExport('docx'); }} className="px-6 py-2.5 bg-[#2D241E] text-white font-bold rounded-xl hover:bg-black">Download DOCX</button>
             </div>
           </div>
         </div>

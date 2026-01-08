@@ -281,9 +281,6 @@ const SuratPengantarPermohonan = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      // Reset Draft & State
-      localStorage.removeItem(DRAFT_KEY);
-      setSaveStatus('idle');
       alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
 
     } catch (error: any) {
@@ -303,6 +300,29 @@ const SuratPengantarPermohonan = () => {
 
   const isStudentDataNeeded = ['pengantar_magang', 'pengantar_penelitian'].includes(formData.tujuanSurat);
 
+  // --- HANDLE KOSONGKAN FORM ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      
+      setFormData({
+        tujuanSurat: '',
+        nomorSurat: '',
+        lampiran: '',
+        perihal: '',
+        alamatTujuan: '',
+        tembusan: '',
+      });
+      
+      setContent({ pembuka: '', isi: '', penutup: '' });
+      setStudents([{ nama: '', nim: '' }]); 
+      setDates({ start: '', end: '', deadline: '' });
+      setFile(null);
+      
+      setSaveStatus('idle');
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
       <div className="max-w-5xl mx-auto">
@@ -321,6 +341,13 @@ const SuratPengantarPermohonan = () => {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {/* Tombol Kosongkan Form */}
+            <button 
+              onClick={handleDeleteDraft}
+              className="px-5 py-2.5 text-xs bg-rose-100 text-rose-700  rounded-lg font-bold hover:bg-rose-200 transition-colors border border-rose-200 flex items-center gap-1"
+            >
+              🗑️ Kosongkan Form
+            </button>
             <button
               onClick={handlePreview}
               disabled={loadingFormat !== null}
@@ -384,14 +411,14 @@ const SuratPengantarPermohonan = () => {
                 </div>
                 
                 <div className="mt-6">
-                     <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
-                     <input 
-                       type="text" 
-                       name="perihal" 
-                       value={formData.perihal} 
-                       onChange={handleChange} 
-                       className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" 
-                       placeholder={placeholders.perihal} 
+                      <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
+                      <input 
+                        type="text" 
+                        name="perihal" 
+                        value={formData.perihal} 
+                        onChange={handleChange} 
+                        className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" 
+                        placeholder={placeholders.perihal} 
                     />
                 </div>
 
@@ -415,7 +442,7 @@ const SuratPengantarPermohonan = () => {
             {/* SECTION 2: DATA MAHASISWA & TANGGAL */}
             {isStudentDataNeeded && (
                 <div>
-                     <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+                      <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
                         Data Mahasiswa & Waktu
                     </h2>

@@ -289,10 +289,6 @@ export default function SuratKeterangan() {
             document.body.removeChild(a)
           }
           
-          // Hapus Draft & Reset Status Simpan
-          localStorage.removeItem(DRAFT_KEY);
-          setSaveStatus('idle');
-
           setShowSuccessPopup(false)
         })
         .catch((err) => {
@@ -343,8 +339,7 @@ export default function SuratKeterangan() {
           a.click()
           a.remove()
           window.URL.revokeObjectURL(url)
-          localStorage.removeItem(DRAFT_KEY)
-          setSaveStatus('idle')
+          
           setShowSuccessPopup(false)
         })
         .catch((err: any) => {
@@ -353,6 +348,26 @@ export default function SuratKeterangan() {
         })
     }
   }
+
+  // --- HANDLE HAPUS DRAFT ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      setFormData({
+        nim: "",
+        namaMahasiswa: "",
+        programStudi: "",
+        tahunAkademik: "",
+        jenisSurat: "",
+        keterangan: "",
+        nomorRegistrasi: "",
+      });
+      setStatusMahasiswa("");
+      setHasMahasiswaData(false);
+      setSaveStatus('idle');
+      setSearchMessage(null);
+    }
+  };
 
   return (
     <div className="min-h-screen p-6 md:p-8" style={{ backgroundColor: colors.neutral.white }}>
@@ -635,8 +650,16 @@ export default function SuratKeterangan() {
               />
             </div>
           </div>
+          
 
           <div className="flex gap-4 pt-8 justify-end" style={{ borderTop: `2px solid ${colors.primary.main}33` }}>
+            {/* Tombol Hapus Draft */}
+            <button 
+              onClick={handleDeleteDraft}
+              className="text-xs bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold hover:bg-rose-200 transition-colors border border-rose-200"
+            >
+              🗑️ Kosongkan Form
+            </button>
             <button
               onClick={handlePreview}
               className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all"

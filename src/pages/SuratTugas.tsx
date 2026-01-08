@@ -167,8 +167,19 @@ const SuratTugas = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`);
 
-      // Reset Draft & Form
+    } catch (error: any) {
+      alert(`Gagal: ${error.message}`);
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
+
+  // --- HANDLE HAPUS DRAFT ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
       localStorage.removeItem(DRAFT_KEY);
       setFormData({
         jenis_surat: 'surat_tugas_dosen',
@@ -186,13 +197,6 @@ const SuratTugas = () => {
         kendaraan: 'Umum'
       });
       setSaveStatus('idle');
-      
-      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh & Draft dihapus.`);
-
-    } catch (error: any) {
-      alert(`Gagal: ${error.message}`);
-    } finally {
-      setLoadingFormat(null);
     }
   };
 
@@ -228,6 +232,13 @@ const SuratTugas = () => {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {/* Tombol Kosongkan Form */}
+            <button
+              onClick={handleDeleteDraft}
+              className="px-5 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 font-semibold rounded-lg hover:bg-rose-100 transition-all shadow-sm flex items-center gap-2"
+            >
+              Kosongkan Form
+            </button>
             <button
               onClick={handlePreview}
               disabled={loadingFormat !== null}
