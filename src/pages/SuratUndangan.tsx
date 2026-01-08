@@ -363,7 +363,7 @@ const SuratUndangan = () => {
               </button>
             </div>
 
-            <div className="bg-[#FDFBF7] rounded-2xl border border-[#F2EFE9] p-6 min-h-[150px]">
+            <div className="bg-[#FDFBF7] rounded-2xl border border-[#F2EFE9] p-6 min-h-150px">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">List Penerima ({recipients.length})</p>
               </div>
