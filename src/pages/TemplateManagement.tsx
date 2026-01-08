@@ -86,7 +86,7 @@ const TemplateManagement = () => {
           return;
         }
         formDataToSend.append('file', file);
-        const response = await api.post('/dashboard/templates', formDataToSend, {
+        await api.post('/dashboard/templates', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

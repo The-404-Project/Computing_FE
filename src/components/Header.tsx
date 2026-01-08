@@ -48,7 +48,7 @@ const Header = ({ onBackToDashboard, onLogout, activeMenuItem = 'dashboard' }: H
         )}
         {/* SIPENA Logo/Text - Clickable */}
         <div onClick={onBackToDashboard} className="cursor-pointer transition-opacity hover:opacity-80 flex items-center gap-3">
-          <img src="/Logo Sipena.png" alt="Logo SIPENA" className="h-16 w-auto" />
+          <img src={`${import.meta.env.BASE_URL}Logo%20Sipena.png`} alt="Logo SIPENA" className="h-16 w-auto" />
           <div>
           <h1 className="text-2xl font-bold text-white">SIPENA</h1>
           <p className="text-sm text-white/80">Sistem Pengelolaan Naskah Akademik</p>
@@ -73,7 +73,7 @@ const Header = ({ onBackToDashboard, onLogout, activeMenuItem = 'dashboard' }: H
 
         {/* Logout Dropdown Menu */}
         {showLogoutMenu && (
-          <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50" style={{ backgroundColor: colors.neutral.white, border: `1px solid ${colors.neutral.light}` }}>
+          <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50" style={{ backgroundColor: colors.neutral.white, border: `1px solid #e5e7eb` }}>
             <button
               onClick={() => {
                 setShowLogoutMenu(false);
