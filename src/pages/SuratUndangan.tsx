@@ -142,7 +142,7 @@ const SuratUndangan = () => {
       setLoadingFormat('preview');
       const payload = { ...formData, list_tamu: recipients };
 
-      const response = await fetch('http://localhost:4000/api/surat-undangan/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-undangan/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -175,7 +175,7 @@ const SuratUndangan = () => {
       setLoadingFormat(format);
       const payload = { ...formData, list_tamu: recipients };
 
-      const response = await fetch(`http://localhost:4000/api/surat-undangan/create?format=${format}`, {
+      const response = await fetch(`http://34.142.141.96:4000/api/surat-undangan/create?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

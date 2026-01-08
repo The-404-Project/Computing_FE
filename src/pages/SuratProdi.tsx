@@ -343,7 +343,7 @@ export default function SuratProdi() {
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      const response = await fetch('http://localhost:4000/api/surat-prodi/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-prodi/preview', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -439,7 +439,7 @@ export default function SuratProdi() {
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      const response = await fetch(`http://localhost:4000/api/surat-prodi/generate?format=${format}`, {
+      const response = await fetch(`http://34.142.141.96:4000/api/surat-prodi/generate?format=${format}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

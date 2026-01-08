@@ -234,7 +234,7 @@ const SuratPengantarPermohonan = () => {
       setLoadingFormat('preview');
       const payload = constructPayload();
 
-      const response = await fetch('http://localhost:4000/api/surat-pengantar/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-pengantar/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -262,7 +262,7 @@ const SuratPengantarPermohonan = () => {
       setLoadingFormat(format);
       const payload = constructPayload();
 
-      const response = await fetch(`http://localhost:4000/api/surat-pengantar/create?format=${format}`, {
+      const response = await fetch(`http://34.142.141.96:4000/api/surat-pengantar/create?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

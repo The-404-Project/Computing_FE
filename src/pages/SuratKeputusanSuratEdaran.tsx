@@ -469,7 +469,7 @@ export default function SuratKeputusanSuratEdaran() {
       setLoadingFormat('preview');
       const payload = buildPayload();
 
-      const response = await fetch('http://localhost:4000/api/surat-keputusan/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-keputusan/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -505,8 +505,8 @@ export default function SuratKeputusanSuratEdaran() {
     
     try {
       const endpoint = format === 'docx' 
-        ? 'http://localhost:4000/api/surat-keputusan/generate-docx'
-        : 'http://localhost:4000/api/surat-keputusan/generate-pdf';
+        ? 'http://34.142.141.96:4000/api/surat-keputusan/generate-docx'
+        : 'http://34.142.141.96:4000/api/surat-keputusan/generate-pdf';
       
       const res = await fetch(endpoint, {
         method: 'POST',

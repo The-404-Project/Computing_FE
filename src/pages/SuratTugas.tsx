@@ -117,7 +117,7 @@ const SuratTugas = () => {
     try {
       setLoadingFormat('preview');
       
-      const response = await fetch('http://localhost:4000/api/surat-tugas/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-tugas/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -150,7 +150,7 @@ const SuratTugas = () => {
     try {
       setLoadingFormat(format);
 
-      const response = await fetch(`http://localhost:4000/api/surat-tugas/create?format=${format}`, {
+      const response = await fetch(`http://34.142.141.96:4000/api/surat-tugas/create?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

@@ -152,7 +152,7 @@ export default function SuratKeterangan() {
         role: currentUserRole,
       }
 
-      const response = await fetch('http://localhost:4000/api/surat-keterangan/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-keterangan/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -280,7 +280,7 @@ export default function SuratKeterangan() {
           const fileName = data.file
           
           if (fileName) {
-            const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(fileName)}`
+            const url = `http://34.142.141.96:4000/api/surat-keterangan/files/${encodeURIComponent(fileName)}`
             const a = document.createElement("a")
             a.href = url
             a.download = fileName
@@ -327,7 +327,7 @@ export default function SuratKeterangan() {
         nama_user: currentUserName,
         role: currentUserRole,
       }
-      fetch(`http://localhost:4000/api/surat-keterangan/create?format=pdf`, {
+      fetch(`http://34.142.141.96:4000/api/surat-keterangan/create?format=pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -740,7 +740,7 @@ export default function SuratKeterangan() {
               {existingFile && (
                 <button
                   onClick={() => {
-                    const url = `http://localhost:4000/api/surat-keterangan/files/${encodeURIComponent(existingFile)}`
+                    const url = `http://34.142.141.96:4000/api/surat-keterangan/files/${encodeURIComponent(existingFile)}`
                     const a = document.createElement('a')
                     a.href = url
                     a.download = existingFile

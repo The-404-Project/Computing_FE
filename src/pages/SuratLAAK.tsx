@@ -216,7 +216,7 @@ const SuratLAAK = () => {
 
   const generateNumber = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/surat-laak/generate-nomor');
+      const response = await fetch('http://34.142.141.96:4000/api/surat-laak/generate-nomor');
       if (!response.ok) {
         throw new Error('Gagal mengambil nomor dari server');
       }
@@ -288,7 +288,7 @@ const SuratLAAK = () => {
       const payload = constructPayload();
 
       // Panggil API Preview Backend
-      const response = await fetch('http://localhost:4000/api/surat-laak/preview', {
+      const response = await fetch('http://34.142.141.96:4000/api/surat-laak/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -313,7 +313,7 @@ const SuratLAAK = () => {
       const payload = constructPayload();
 
       // Panggil API Create Backend
-      const response = await fetch(`http://localhost:4000/api/surat-laak/create?format=${format}`, {
+      const response = await fetch(`http://34.142.141.96:4000/api/surat-laak/create?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
