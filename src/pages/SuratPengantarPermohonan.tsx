@@ -41,7 +41,7 @@ const DRAFT_KEY = 'surat_pengantar_draft_v1';
 const SuratPengantarPermohonan = () => {
   // --- STATE ---
   
-  // 1. Data Utama (Semua default kosong)
+  // 1. Data Utama
   const [formData, setFormData] = useState<FormData>({
     tujuanSurat: '',
     nomorSurat: '',
@@ -59,7 +59,9 @@ const SuratPengantarPermohonan = () => {
 
   const [students, setStudents] = useState<Student[]>([{ nama: '', nim: '' }]);
   const [dates, setDates] = useState<DateRange>({ start: '', end: '', deadline: '' });
-  const [file, setFile] = useState<File | null>(null);
+  
+  // [REMOVED] State File Upload dihapus
+  // const [file, setFile] = useState<File | null>(null);
 
   // 2. State UI & Loading
   const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null);
@@ -186,11 +188,8 @@ const SuratPengantarPermohonan = () => {
     }
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
+  // [REMOVED] Handler file change dihapus
+  // const handleFileChange = ...
 
   // --- DATA PREPARATION ---
   const formatDateIndo = (dateString: string) => {
@@ -206,10 +205,11 @@ const SuratPengantarPermohonan = () => {
       nomorSurat: formData.nomorSurat, 
       metadata: {
         perihal: formData.perihal,
-        lampiran: formData.lampiran,
+        lampiran: formData.lampiran, // Hanya kirim teks lampiran
         alamat_array: formData.alamatTujuan.split('\n'),
         cc_array: formData.tembusan ? formData.tembusan.split(',').map(s => s.trim()) : [],
-        lampiran_file: file ? file.name : "-"
+        // [MODIFIED] Set static dash karena tidak ada upload file
+        lampiran_file: "-" 
       },
       content_blocks: content,
       dynamic_data: {
@@ -234,6 +234,7 @@ const SuratPengantarPermohonan = () => {
       setLoadingFormat('preview');
       const payload = constructPayload();
 
+      // Request body tetap JSON standard, bukan FormData
       const response = await fetch('http://34.142.141.96:4000/api/surat-pengantar/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -303,6 +304,28 @@ const SuratPengantarPermohonan = () => {
 
   const isStudentDataNeeded = ['pengantar_magang', 'pengantar_penelitian'].includes(formData.tujuanSurat);
 
+  // --- HANDLE KOSONGKAN FORM ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      
+      setFormData({
+        tujuanSurat: '',
+        nomorSurat: '',
+        lampiran: '',
+        perihal: '',
+        alamatTujuan: '',
+        tembusan: '',
+      });
+      
+      setContent({ pembuka: '', isi: '', penutup: '' });
+      setStudents([{ nama: '', nim: '' }]); 
+      setDates({ start: '', end: '', deadline: '' });
+      
+      setSaveStatus('idle');
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
       <div className="max-w-5xl mx-auto">
@@ -321,6 +344,13 @@ const SuratPengantarPermohonan = () => {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {/* Tombol Kosongkan Form */}
+            <button 
+              onClick={handleDeleteDraft}
+              className="px-5 py-2.5 text-xs bg-rose-100 text-rose-700  rounded-lg font-bold hover:bg-rose-200 transition-colors border border-rose-200 flex items-center gap-1"
+            >
+              🗑️ Kosongkan Form
+            </button>
             <button
               onClick={handlePreview}
               disabled={loadingFormat !== null}
@@ -384,14 +414,14 @@ const SuratPengantarPermohonan = () => {
                 </div>
                 
                 <div className="mt-6">
-                     <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
-                     <input 
-                       type="text" 
-                       name="perihal" 
-                       value={formData.perihal} 
-                       onChange={handleChange} 
-                       className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" 
-                       placeholder={placeholders.perihal} 
+                      <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Perihal</label>
+                      <input 
+                        type="text" 
+                        name="perihal" 
+                        value={formData.perihal} 
+                        onChange={handleChange} 
+                        className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" 
+                        placeholder={placeholders.perihal} 
                     />
                 </div>
 
@@ -401,11 +431,10 @@ const SuratPengantarPermohonan = () => {
                         <textarea name="alamatTujuan" value={formData.alamatTujuan} onChange={handleChange} rows={4} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none font-mono text-sm" placeholder={`Yth. HRD PT Telkom\nJl. Geger Kalong No 1\nBandung`} />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Lampiran</label>
+                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Lampiran (Teks)</label>
                         <input type="text" name="lampiran" value={formData.lampiran} onChange={handleChange} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none mb-4" placeholder="Contoh: 1 (satu) Berkas" />
                         
-                        <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Upload File Pendukung (Opsional)</label>
-                        <input type="file" onChange={handleFileChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#B28D35] file:text-white hover:file:bg-[#96762B]" />
+                        {/* [REMOVED] Input File Upload dihapus */}
                     </div>
                 </div>
             </div>
@@ -415,7 +444,7 @@ const SuratPengantarPermohonan = () => {
             {/* SECTION 2: DATA MAHASISWA & TANGGAL */}
             {isStudentDataNeeded && (
                 <div>
-                     <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
+                      <h2 className="text-xl font-bold text-[#2D241E] mb-6 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-[#B28D35] rounded-full"></span>
                         Data Mahasiswa & Waktu
                     </h2>
@@ -502,7 +531,7 @@ const SuratPengantarPermohonan = () => {
                             placeholder={placeholders.penutup}
                         />
                     </div>
-                     <div>
+                      <div>
                         <label className="block text-sm font-semibold text-[#6B5E54] mb-2">Tembusan (CC)</label>
                         <textarea name="tembusan" value={formData.tembusan} onChange={handleChange} rows={2} className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none" placeholder="Contoh: Arsip, Dosen Wali (Pisahkan dengan koma)" />
                     </div>

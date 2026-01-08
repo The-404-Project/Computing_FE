@@ -541,6 +541,32 @@ export default function SuratKeputusanSuratEdaran() {
     }
   }, [buildPayload, docType]);
 
+  // --- HANDLE KOSONGKAN FORM ---
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      // Reset State ke Default
+      setDocType(activeTab === 'SK' ? 'SK_DEKAN' : 'SE_UMUM');
+      setPerihal('');
+      setNomorSurat('');
+      setTempat('');
+      setTanggalPenetapan('');
+      setMenimbang([{ id: Date.now(), text: '' }]);
+      setMengingat([{ id: Date.now() + 1, text: '' }]);
+      setMemperhatikan([]);
+      setMenetapkan('');
+      setPasal([{ 
+        id: Date.now(), 
+        title: 'Pertama', 
+        type: 'text', 
+        content: '', 
+        points: [{ id: Date.now(), text: '' }] 
+      }]);
+      setApprovers([{ id: Date.now(), role: 'Dekan', name: '' }]);
+      setSaveStatus('idle');
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#FDFBF7] p-6 md:p-10 font-sans text-[#4A3F35]">
       {exportError && (
@@ -574,6 +600,13 @@ export default function SuratKeputusanSuratEdaran() {
             </div>
           </div>
           <div className="flex gap-3 items-center">
+            {/* Tombol Kosongkan Form */}
+              <button 
+                onClick={handleDeleteDraft}
+                className="items-center gap-2 bg-rose-100 text-rose-700 px-5 py-2.5 rounded-lg font-bold hover:bg-rose-200 transition-all shadow-sm border border-rose-200 disabled:opacity-50"
+              >
+                🗑️ Kosongkan Form
+              </button>
              {/* Tombol Preview */}
              <button
               onClick={handlePreview}

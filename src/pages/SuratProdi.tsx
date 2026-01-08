@@ -69,7 +69,6 @@ export default function SuratProdi() {
   const [searchMessage, setSearchMessage] = useState<string | null>(null)
   const [hasMahasiswaData, setHasMahasiswaData] = useState(false)
   
-  // Status tracking
   const [docStatus, setDocStatus] = useState<'draft' | 'submitted' | 'approved' | 'rejected' | 'generated' | null>(null)
   const [docId, setDocId] = useState<number | null>(null)
   const [approvals, setApprovals] = useState<Approval[]>([])
@@ -82,24 +81,20 @@ export default function SuratProdi() {
   const [digitalSignature, setDigitalSignature] = useState('')
   const [currentUser, setCurrentUser] = useState<{ userId?: number; role?: string } | null>(null)
   
-  // Preview & Export
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Draft auto-save
   const DRAFT_KEY = 'surat_prodi_draft_v1'
   const [isDraftLoaded, setIsDraftLoaded] = useState(false)
   const [isSystemReady, setIsSystemReady] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
-  // State untuk template kustom
   const [templates, setTemplates] = useState<Template[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
 
-  // Load current user info
   useEffect(() => {
     const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
     if (userRaw) {
@@ -110,12 +105,10 @@ export default function SuratProdi() {
           role: u.role,
         })
       } catch {
-        // Ignore parse error
       }
     }
   }, [])
 
-  // Load draft on mount (hanya formData, seperti SuratKeterangan)
   useEffect(() => {
     const savedData = localStorage.getItem(DRAFT_KEY)
     if (savedData) {
@@ -133,7 +126,6 @@ export default function SuratProdi() {
     setIsSystemReady(true)
   }, [])
 
-  // Auto-save draft (hanya formData, seperti SuratKeterangan)
   useEffect(() => {
     if (!isSystemReady) return
     setSaveStatus('saving')
@@ -145,7 +137,6 @@ export default function SuratProdi() {
     return () => clearTimeout(timer)
   }, [formData, isSystemReady])
 
-  // Fetch templates kustom untuk surat prodi
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoadingTemplates(true)
@@ -162,7 +153,6 @@ export default function SuratProdi() {
     fetchTemplates()
   }, [])
 
-  // Load document data (approvals & history)
   const loadDocData = async (id: number) => {
     try {
       const [approvalRes, historyRes] = await Promise.all([
@@ -265,7 +255,6 @@ export default function SuratProdi() {
     }
     
     try {
-      // Jika belum ada docId, buat draft terlebih dahulu
       let currentDocId = docId
       if (!currentDocId) {
         const createRes = await api.post("/surat-prodi/create", formData)
@@ -274,7 +263,6 @@ export default function SuratProdi() {
         setDocStatus('draft')
       }
       
-      // Submit untuk approval
       if (!currentDocId) {
         setErrorMessage('Gagal membuat draft')
         setShowErrorPopup(true)
@@ -295,19 +283,16 @@ export default function SuratProdi() {
     try {
       setLoadingFormat('preview')
       
-      // Validasi minimal
       if (!formData.nim || !formData.jenisSurat) {
         alert('NIM dan Jenis Surat harus diisi untuk preview')
         setLoadingFormat(null)
         return
       }
 
-      // Handle template kustom
       let jenisSuratLower: string;
       let templateName: string | undefined;
       
       if (formData.jenisSurat.startsWith('template_')) {
-        // Template kustom - ambil dari templates state
         const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
         const customTemplate = templates.find(t => t.template_id === templateId);
         if (customTemplate) {
@@ -317,7 +302,6 @@ export default function SuratProdi() {
           jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
         }
       } else {
-        // Template default
         jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
       }
 
@@ -331,12 +315,10 @@ export default function SuratProdi() {
         keterangan: formData.keterangan || '',
       }
 
-      // Tambahkan templateName jika template kustom
       if (templateName) {
         payload.templateName = templateName;
       }
 
-      // Get token for authorization
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (token) {
@@ -355,12 +337,10 @@ export default function SuratProdi() {
           const errorData = await response.json()
           errorMessage = errorData.message || errorData.error || errorMessage
         } catch {
-          // If not JSON, try text
           try {
             const errorText = await response.text()
             errorMessage = errorText || errorMessage
           } catch {
-            // Use default
           }
         }
         throw new Error(errorMessage)
@@ -390,19 +370,16 @@ export default function SuratProdi() {
     try {
       setLoadingFormat(format)
 
-      // Validasi minimal
       if (!formData.nim || !formData.jenisSurat) {
         alert('NIM dan Jenis Surat harus diisi untuk export')
         setLoadingFormat(null)
         return
       }
 
-      // Handle template kustom
       let jenisSuratLower: string;
       let templateName: string | undefined;
       
       if (formData.jenisSurat.startsWith('template_')) {
-        // Template kustom - ambil dari templates state
         const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
         const customTemplate = templates.find(t => t.template_id === templateId);
         if (customTemplate) {
@@ -412,7 +389,6 @@ export default function SuratProdi() {
           jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
         }
       } else {
-        // Template default
         jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
       }
 
@@ -427,12 +403,10 @@ export default function SuratProdi() {
         keterangan: formData.keterangan || '',
       }
 
-      // Tambahkan templateName jika template kustom
       if (templateName) {
         payload.templateName = templateName;
       }
 
-      // Get token for authorization
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (token) {
@@ -446,7 +420,6 @@ export default function SuratProdi() {
       })
 
       if (!response.ok) {
-        // Try to get error message from response
         const contentType = response.headers.get('content-type')
         let errorMessage = 'Gagal export dokumen'
         try {
@@ -458,14 +431,12 @@ export default function SuratProdi() {
             errorMessage = errorText || errorMessage
           }
         } catch {
-          // If parsing fails, use default message
         }
         throw new Error(errorMessage)
       }
 
       const blob = await response.blob()
 
-      // Check if response is actually an error (sometimes backend returns JSON error but status is 200)
       if (blob.type === 'application/json') {
         const errorText = await blob.text()
         const errorData = JSON.parse(errorText)
@@ -481,12 +452,9 @@ export default function SuratProdi() {
       a.remove()
       window.URL.revokeObjectURL(url)
 
-      // Hapus Draft & Reset Status Simpan
-      localStorage.removeItem(DRAFT_KEY)
-      setSaveStatus('idle')
       setDocStatus('generated')
 
-      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh & Draft dihapus.`)
+      alert(`Berhasil! Dokumen ${format.toUpperCase()} terunduh.`)
     } catch (err: unknown) {
       const error = err as { message?: string }
       alert(`Gagal: ${error?.message || 'Gagal export dokumen'}`)
@@ -495,7 +463,6 @@ export default function SuratProdi() {
     }
   }
 
-  // Check if current user has pending approval
   const hasPendingApproval = () => {
     if (!currentUser?.userId || !approvals.length) return false
     return approvals.some(
@@ -569,10 +536,32 @@ export default function SuratProdi() {
     )
   }
 
+  const handleDeleteDraft = () => {
+    if (window.confirm("Apakah Anda yakin ingin mengosongkan form? Data draft akan dihapus.")) {
+      localStorage.removeItem(DRAFT_KEY);
+      setFormData({
+        nim: "",
+        namaMahasiswa: "",
+        programStudi: "",
+        tahunAkademik: "",
+        jenisSurat: "",
+        namaDosen: "",
+        nipDosen: "",
+        judulPenelitian: "",
+        keterangan: "",
+        nomorRegistrasi: "",
+      });
+      setStatusMahasiswa("");
+      setHasMahasiswaData(false);
+      setSaveStatus('idle');
+      setDocStatus(null);
+      setDocId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 md:p-8" style={{ backgroundColor: colors.neutral.white }}>
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
         <div className="pb-6 md:pb-8 border-b-2" style={{ borderColor: colors.primary.main }}>
           <h1 className="text-3xl font-bold" style={{ color: colors.primary.main }}>
             Formulir Surat Program Studi
@@ -605,9 +594,7 @@ export default function SuratProdi() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-8">
-          {/* Data Mahasiswa Section */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold" style={{ color: colors.primary.main }}>
               Data Mahasiswa
@@ -684,7 +671,6 @@ export default function SuratProdi() {
             )}
           </div>
 
-          {/* Data Dosen & Penelitian Section */}
           <div className="space-y-6 pt-8" style={{ borderTop: `2px solid ${colors.primary.main}33` }}>
             <h2 className="text-xl font-semibold" style={{ color: colors.primary.main }}>
               Data Dosen Pembimbing & Penelitian
@@ -739,7 +725,6 @@ export default function SuratProdi() {
             </div>
           </div>
 
-          {/* Detail Surat Section */}
           <div className="space-y-6 pt-8" style={{ borderTop: `2px solid ${colors.primary.main}33` }}>
             <h2 className="text-xl font-semibold" style={{ color: colors.primary.main }}>
               Detail Surat
@@ -779,7 +764,6 @@ export default function SuratProdi() {
                       Surat Program Studi
                     </button>
                     
-                    {/* Template Kustom dari Database */}
                     {templates.length > 0 && (
                       <>
                         <div className="border-t my-1" style={{ borderColor: colors.primary.light }}></div>
@@ -832,8 +816,13 @@ export default function SuratProdi() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-4 pt-8 justify-end flex-wrap" style={{ borderTop: `2px solid ${colors.primary.main}33` }}>
+            <button 
+              onClick={handleDeleteDraft}
+              className="text-xs bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold hover:bg-rose-200 transition-colors border border-rose-200 flex items-center gap-1"
+            >
+              🗑️ Kosongkan Form
+            </button>
             {(!docStatus || docStatus === 'draft') && (
               <button
                 onClick={handleSubmit}
@@ -876,7 +865,6 @@ export default function SuratProdi() {
         </div>
       </div>
 
-      {/* Preview Modal */}
       {showPreviewModal && previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
@@ -902,7 +890,6 @@ export default function SuratProdi() {
         </div>
       )}
 
-      {/* Error Popup */}
       {showErrorPopup && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: `${colors.neutral.black}33` }}>
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-6">
@@ -929,7 +916,6 @@ export default function SuratProdi() {
         </div>
       )}
 
-      {/* History Modal */}
       {showHistoryModal && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: `${colors.neutral.black}33` }}>
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -961,7 +947,6 @@ export default function SuratProdi() {
         </div>
       )}
 
-      {/* Approval Modal */}
       {showApprovalModal && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: `${colors.neutral.black}33` }}>
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -1008,7 +993,6 @@ export default function SuratProdi() {
                       </div>
                     </div>
                   ))}
-                  {/* Tombol Approve/Reject jika user memiliki pending approval */}
                   {hasPendingApproval() && docStatus === 'submitted' && (
                     <div className="mt-4 pt-4 border-t flex gap-3">
                       <button
@@ -1034,7 +1018,6 @@ export default function SuratProdi() {
         </div>
       )}
 
-      {/* Approve/Reject Modal dengan Digital Signature */}
       {showApproveRejectModal && approvalAction && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: `${colors.neutral.black}33` }}>
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
@@ -1108,4 +1091,3 @@ export default function SuratProdi() {
     </div>
   )
 }
-
