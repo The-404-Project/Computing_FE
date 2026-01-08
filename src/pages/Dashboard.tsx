@@ -74,7 +74,8 @@ const Dashboard = ({
       surat_tugas: 'Surat Tugas',
       surat_undangan: 'Surat Undangan',
       surat_keterangan: 'Surat Keterangan',
-      surat_pengantar: 'Surat Pengantar',
+      surat_pengantar: 'Surat Pengantar & Permohonan',
+      surat_permohonan: 'Surat Pengantar & Permohonan', // Gabungkan dengan surat_pengantar
       surat_keputusan: 'Surat Keputusan',
       surat_prodi: 'Surat Prodi',
       surat_laak: 'Surat LAAK',
@@ -92,11 +93,26 @@ const Dashboard = ({
     return `${monthNames[monthIndex]} ${year}`;
   };
 
-  // Prepare data for charts
-  const pieChartData = stats.byType.map((item) => ({
-    name: formatDocType(item.type),
-    value: item.count,
-  }));
+  // Prepare data for charts - Gabungkan surat_pengantar dan surat_permohonan
+  const processedData = stats.byType.reduce((acc, item) => {
+    // Gabungkan surat_pengantar dan surat_permohonan menjadi satu
+    if (item.type === 'surat_pengantar' || item.type === 'surat_permohonan') {
+      const existing = acc.find((a: any) => a.name === 'Surat Pengantar & Permohonan');
+      if (existing) {
+        existing.value += item.count;
+      } else {
+        acc.push({ name: 'Surat Pengantar & Permohonan', value: item.count });
+      }
+    } else {
+      acc.push({
+        name: formatDocType(item.type),
+        value: item.count,
+      });
+    }
+    return acc;
+  }, [] as Array<{ name: string; value: number }>);
+
+  const pieChartData = processedData;
 
   const barChartData = stats.byMonth.map((item) => ({
     month: formatMonth(item.month),

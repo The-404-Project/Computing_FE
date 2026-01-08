@@ -215,7 +215,7 @@ const ArsipSurat = () => {
       // Surat Pengantar specific types
       pengantar_magang: 'Surat Pengantar Magang',
       pengantar_penelitian: 'Surat Pengantar Penelitian',
-      surat_permohonan: 'Surat Permohonan',
+      surat_permohonan: 'Surat Pengantar & Permohonan', // Gabungkan dengan surat pengantar
 
       // Surat Keterangan specific types (from modul3)
       'surat keterangan aktif kuliah': 'Surat Keterangan Aktif Kuliah',
@@ -279,8 +279,8 @@ const ArsipSurat = () => {
       surat_tugas: 'Surat Tugas',
       surat_undangan: 'Surat Undangan',
       surat_keterangan: 'Surat Keterangan',
-      surat_pengantar: 'Surat Pengantar',
-      surat_permohonan: 'Surat Permohonan',
+      surat_pengantar: 'Surat Pengantar & Permohonan',
+      surat_permohonan: 'Surat Pengantar & Permohonan', // Gabungkan dengan surat_pengantar
       surat_keputusan: 'Surat Keputusan',
       surat_edaran: 'Surat Edaran',
       surat_prodi: 'Surat Prodi',
@@ -362,7 +362,7 @@ const ArsipSurat = () => {
               <option value="surat_tugas">Surat Tugas</option>
               <option value="surat_undangan">Surat Undangan</option>
               <option value="surat_keterangan">Surat Keterangan</option>
-              <option value="surat_pengantar">Surat Pengantar</option>
+              <option value="surat_pengantar">Surat Pengantar & Permohonan</option>
               <option value="surat_keputusan">Surat Keputusan</option>
               <option value="surat_edaran">Surat Edaran</option>
               <option value="surat_prodi">Surat Prodi</option>
