@@ -41,6 +41,13 @@ interface HistoryItem {
   changes: Record<string, unknown> | null
 }
 
+interface Template {
+  template_id: number
+  template_name: string
+  template_type: string
+  file_path: string
+}
+
 export default function SuratProdi() {
   const [formData, setFormData] = useState<FormData>({
     nim: "",
@@ -88,6 +95,10 @@ export default function SuratProdi() {
   const [isSystemReady, setIsSystemReady] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+
   // Load current user info
   useEffect(() => {
     const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
@@ -133,6 +144,23 @@ export default function SuratProdi() {
     }, 1000)
     return () => clearTimeout(timer)
   }, [formData, isSystemReady])
+
+  // Fetch templates kustom untuk surat prodi
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true)
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_prodi')
+        setTemplates(response.data.templates || [])
+      } catch (err) {
+        console.error('Error fetching templates:', err)
+      } finally {
+        setLoadingTemplates(false)
+      }
+    }
+
+    fetchTemplates()
+  }, [])
 
   // Load document data (approvals & history)
   const loadDocData = async (id: number) => {
@@ -274,10 +302,26 @@ export default function SuratProdi() {
         return
       }
 
-      // Convert jenis surat ke lowercase sesuai dengan templateMap di backend
-      const jenisSuratLower = formData.jenisSurat.toLowerCase().trim()
+      // Handle template kustom
+      let jenisSuratLower: string;
+      let templateName: string | undefined;
+      
+      if (formData.jenisSurat.startsWith('template_')) {
+        // Template kustom - ambil dari templates state
+        const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
+        const customTemplate = templates.find(t => t.template_id === templateId);
+        if (customTemplate) {
+          jenisSuratLower = customTemplate.template_type.toLowerCase().trim();
+          templateName = customTemplate.file_path;
+        } else {
+          jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
+        }
+      } else {
+        // Template default
+        jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
+      }
 
-      const payload = {
+      const payload: any = {
         nomorSurat: formData.nomorRegistrasi || 'XXX/PREVIEW/2025',
         nim: formData.nim,
         jenis_surat: jenisSuratLower,
@@ -285,6 +329,11 @@ export default function SuratProdi() {
         nipDosen: formData.nipDosen || '',
         judulPenelitian: formData.judulPenelitian || '',
         keterangan: formData.keterangan || '',
+      }
+
+      // Tambahkan templateName jika template kustom
+      if (templateName) {
+        payload.templateName = templateName;
       }
 
       // Get token for authorization
@@ -348,10 +397,26 @@ export default function SuratProdi() {
         return
       }
 
-      // Convert jenis surat ke lowercase sesuai dengan templateMap di backend
-      const jenisSuratLower = formData.jenisSurat.toLowerCase().trim()
+      // Handle template kustom
+      let jenisSuratLower: string;
+      let templateName: string | undefined;
+      
+      if (formData.jenisSurat.startsWith('template_')) {
+        // Template kustom - ambil dari templates state
+        const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
+        const customTemplate = templates.find(t => t.template_id === templateId);
+        if (customTemplate) {
+          jenisSuratLower = customTemplate.template_type.toLowerCase().trim();
+          templateName = customTemplate.file_path;
+        } else {
+          jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
+        }
+      } else {
+        // Template default
+        jenisSuratLower = formData.jenisSurat.toLowerCase().trim();
+      }
 
-      const payload = {
+      const payload: any = {
         doc_id: docId || null,
         nomorSurat: formData.nomorRegistrasi || '',
         nim: formData.nim,
@@ -360,6 +425,11 @@ export default function SuratProdi() {
         nipDosen: formData.nipDosen || '',
         judulPenelitian: formData.judulPenelitian || '',
         keterangan: formData.keterangan || '',
+      }
+
+      // Tambahkan templateName jika template kustom
+      if (templateName) {
+        payload.templateName = templateName;
       }
 
       // Get token for authorization
@@ -682,14 +752,17 @@ export default function SuratProdi() {
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="w-full px-4 py-2 bg-white border rounded-lg text-left flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-2"
                   style={{ borderColor: colors.primary.light, "--tw-ring-color": colors.primary.main } as React.CSSProperties}
+                  disabled={loadingTemplates}
                 >
                   <span className={!formData.jenisSurat ? "text-gray-400" : "text-gray-900"}>
-                    {formData.jenisSurat || "Pilih jenis surat"}
+                    {formData.jenisSurat.startsWith('template_') 
+                      ? templates.find(t => `template_${t.template_id}` === formData.jenisSurat)?.template_name || formData.jenisSurat
+                      : formData.jenisSurat || "Pilih jenis surat"}
                   </span>
                   <ChevronDown className="w-5 h-5 text-gray-400" />
                 </button>
                 {showDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10" style={{ borderColor: colors.primary.light }}>
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto" style={{ borderColor: colors.primary.light }}>
                     <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setFormData((prev) => ({ ...prev, jenisSurat: "Surat Rekomendasi Mahasiswa" })); setShowDropdown(false) }}>
                       Surat Rekomendasi Mahasiswa
                     </button>
@@ -705,6 +778,29 @@ export default function SuratProdi() {
                     <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setFormData((prev) => ({ ...prev, jenisSurat: "Surat Program Studi" })); setShowDropdown(false) }}>
                       Surat Program Studi
                     </button>
+                    
+                    {/* Template Kustom dari Database */}
+                    {templates.length > 0 && (
+                      <>
+                        <div className="border-t my-1" style={{ borderColor: colors.primary.light }}></div>
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Template Kustom</div>
+                        {templates.map((template) => (
+                          <button
+                            key={template.template_id}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, jenisSurat: `template_${template.template_id}` }));
+                              setShowDropdown(false);
+                            }}
+                          >
+                            {template.template_name}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {loadingTemplates && (
+                      <div className="px-4 py-2 text-xs text-gray-500">Memuat template...</div>
+                    )}
                   </div>
                 )}
               </div>

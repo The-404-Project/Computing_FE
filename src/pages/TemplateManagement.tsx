@@ -161,17 +161,40 @@ const TemplateManagement = () => {
 
     // Mapping jenis template ke nama file template dari folder templates
     const templateMap: { [key: string]: string } = {
+      // Surat Tugas & Perintah
       'surat_tugas': 'template_surat_tugas.docx',
       'sppd': 'template_sppd.docx',
+      
+      // Surat Undangan
       'surat_undangan': 'template_undangan.docx',
+      
+      // Surat Keterangan
       'surat_keterangan_aktif_kuliah': 'template_surat_keterangan_mahasiswa_aktif.docx',
       'surat_keterangan_lulus': 'template_surat_keterangan_lulus.docx',
       'surat_keterangan_kelakuan_baik': 'template_surat_keterangan_kelakuan_baik.docx',
       'surat_keterangan_bebas_pinjaman': 'template_surat_keterangan_bebas_pinjaman.docx',
+      'surat_keterangan': 'template_surat_keterangan_mahasiswa_aktif.docx', // Default untuk surat_keterangan
+      
+      // Surat Pengantar & Permohonan
       'surat_pengantar_A': 'template_pengantarpermohonan_A.docx',
       'surat_pengantar_B': 'template_pengantarpermohonan_B.docx',
-      'surat_keterangan': 'template_surat_keterangan_mahasiswa_aktif.docx', // Default untuk surat_keterangan
       'surat_pengantar': 'template_pengantarpermohonan_A.docx', // Default untuk surat_pengantar
+      
+      // Surat Keputusan & Edaran
+      'sk_dekan': 'template_surat_keputusan_dekan.docx',
+      'sk_panitia': 'template_surat_keputusan_panitia.docx',
+      'se_akademik': 'template_surat_edaran_akademik.docx',
+      'se_umum': 'template_surat_edaran_umum.docx',
+      
+      // Surat Program Studi
+      'surat_prodi': 'template_surat_program_studi.docx',
+      
+      // Surat LAAK
+      'surat_permohonan_akreditasi': 'template_surat_permohonan_akreditasi.docx',
+      'berita_acara_visitasi': 'template_berita_acara_visitasi.docx',
+      'laporan_audit_internal': 'template_laporan_audit_internal.docx',
+      'surat_tindak_lanjut_audit': 'template_surat_tindak_lanjut_audit.docx',
+      'laak_default': 'template_laak_default.docx',
     };
 
     const templateFileName = templateMap[templateType];
@@ -230,9 +253,8 @@ const TemplateManagement = () => {
   // Get template type label
   const getTemplateTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
-      // Surat Tugas & Perintah
+      // Surat Tugas
       surat_tugas: 'Surat Tugas',
-      sppd: 'SPPD',
       
       // Surat Undangan
       surat_undangan: 'Surat Undangan',
@@ -244,15 +266,26 @@ const TemplateManagement = () => {
       surat_keterangan_bebas_pinjaman: 'Surat Keterangan Bebas Pinjaman',
       surat_keterangan: 'Surat Keterangan',
       
-      // Surat Pengantar
+      // Surat Pengantar & Permohonan
       surat_pengantar_A: 'Surat Pengantar A',
       surat_pengantar_B: 'Surat Pengantar B',
-      surat_pengantar: 'Surat Pengantar',
+      surat_pengantar: 'Surat Pengantar & Permohonan',
       
-      // Surat Lainnya
-      surat_keputusan: 'Surat Keputusan',
-      surat_prodi: 'Surat Prodi',
-      surat_laak: 'Surat LAAK',
+      // Surat Keputusan & Edaran
+      sk_dekan: 'Surat Keputusan Dekan',
+      sk_panitia: 'Surat Keputusan Panitia',
+      se_akademik: 'Surat Edaran Akademik',
+      se_umum: 'Surat Edaran Umum',
+      
+      // Surat Program Studi
+      surat_prodi: 'Surat Program Studi',
+      
+      // Surat LAAK
+      surat_permohonan_akreditasi: 'Surat Permohonan Akreditasi',
+      berita_acara_visitasi: 'Berita Acara Visitasi',
+      laporan_audit_internal: 'Laporan Audit Internal',
+      surat_tindak_lanjut_audit: 'Surat Tindak Lanjut Audit',
+      laak_default: 'LAAK Default',
     };
     return labels[type] || type;
   };
@@ -297,20 +330,40 @@ const TemplateManagement = () => {
             style={{ borderColor: '#d1d5db' }}
           >
             <option value="">Semua Jenis</option>
-            <option value="surat_tugas">Surat Tugas</option>
-            <option value="sppd">SPPD</option>
-            <option value="surat_undangan">Surat Undangan</option>
-            <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
-            <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
-            <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
-            <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
-            <option value="surat_keterangan">Surat Keterangan</option>
-            <option value="surat_pengantar_A">Surat Pengantar A</option>
-            <option value="surat_pengantar_B">Surat Pengantar B</option>
-            <option value="surat_pengantar">Surat Pengantar</option>
-            <option value="surat_keputusan">Surat Keputusan</option>
-            <option value="surat_prodi">Surat Prodi</option>
-            <option value="surat_laak">Surat LAAK</option>
+            <optgroup label="Surat Tugas">
+              <option value="surat_tugas">Surat Tugas</option>
+            </optgroup>
+            <optgroup label="Surat Undangan">
+              <option value="surat_undangan">Surat Undangan</option>
+            </optgroup>
+            <optgroup label="Surat Keterangan">
+              <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
+              <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
+              <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
+              <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
+              <option value="surat_keterangan">Surat Keterangan (Umum)</option>
+            </optgroup>
+            <optgroup label="Surat Pengantar & Permohonan">
+              <option value="surat_pengantar_A">Surat Pengantar A</option>
+              <option value="surat_pengantar_B">Surat Pengantar B</option>
+              <option value="surat_pengantar">Surat Pengantar & Permohonan (Umum)</option>
+            </optgroup>
+            <optgroup label="Surat Keputusan & Edaran">
+              <option value="sk_dekan">Surat Keputusan Dekan</option>
+              <option value="sk_panitia">Surat Keputusan Panitia</option>
+              <option value="se_akademik">Surat Edaran Akademik</option>
+              <option value="se_umum">Surat Edaran Umum</option>
+            </optgroup>
+            <optgroup label="Surat Program Studi">
+              <option value="surat_prodi">Surat Program Studi</option>
+            </optgroup>
+            <optgroup label="Surat LAAK">
+              <option value="surat_permohonan_akreditasi">Surat Permohonan Akreditasi</option>
+              <option value="berita_acara_visitasi">Berita Acara Visitasi</option>
+              <option value="laporan_audit_internal">Laporan Audit Internal</option>
+              <option value="surat_tindak_lanjut_audit">Surat Tindak Lanjut Audit</option>
+              <option value="laak_default">LAAK Default</option>
+            </optgroup>
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,29 +497,40 @@ const TemplateManagement = () => {
                   required
                 >
                   <option value="">Pilih Jenis</option>
-                  {/* Surat Tugas & Perintah */}
-                  <option value="surat_tugas">Surat Tugas</option>
-                  <option value="sppd">SPPD (Surat Perintah Perjalanan Dinas)</option>
-                  
-                  {/* Surat Undangan */}
-                  <option value="surat_undangan">Surat Undangan</option>
-                  
-                  {/* Surat Keterangan */}
-                  <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
-                  <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
-                  <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
-                  <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
-                  <option value="surat_keterangan">Surat Keterangan (Umum)</option>
-                  
-                  {/* Surat Pengantar */}
-                  <option value="surat_pengantar_A">Surat Pengantar A</option>
-                  <option value="surat_pengantar_B">Surat Pengantar B</option>
-                  <option value="surat_pengantar">Surat Pengantar (Umum)</option>
-                  
-                  {/* Surat Lainnya */}
-                  <option value="surat_keputusan">Surat Keputusan</option>
-                  <option value="surat_prodi">Surat Prodi</option>
-                  <option value="surat_laak">Surat LAAK</option>
+                  <optgroup label="Surat Tugas">
+                    <option value="surat_tugas">Surat Tugas</option>
+                  </optgroup>
+                  <optgroup label="Surat Undangan">
+                    <option value="surat_undangan">Surat Undangan</option>
+                  </optgroup>
+                  <optgroup label="Surat Keterangan">
+                    <option value="surat_keterangan_aktif_kuliah">Surat Keterangan Aktif Kuliah</option>
+                    <option value="surat_keterangan_lulus">Surat Keterangan Lulus</option>
+                    <option value="surat_keterangan_kelakuan_baik">Surat Keterangan Kelakuan Baik</option>
+                    <option value="surat_keterangan_bebas_pinjaman">Surat Keterangan Bebas Pinjaman</option>
+                    <option value="surat_keterangan">Surat Keterangan (Umum)</option>
+                  </optgroup>
+                  <optgroup label="Surat Pengantar & Permohonan">
+                    <option value="surat_pengantar_A">Surat Pengantar A</option>
+                    <option value="surat_pengantar_B">Surat Pengantar B</option>
+                    <option value="surat_pengantar">Surat Pengantar & Permohonan (Umum)</option>
+                  </optgroup>
+                  <optgroup label="Surat Keputusan & Edaran">
+                    <option value="sk_dekan">Surat Keputusan Dekan</option>
+                    <option value="sk_panitia">Surat Keputusan Panitia</option>
+                    <option value="se_akademik">Surat Edaran Akademik</option>
+                    <option value="se_umum">Surat Edaran Umum</option>
+                  </optgroup>
+                  <optgroup label="Surat Program Studi">
+                    <option value="surat_prodi">Surat Program Studi</option>
+                  </optgroup>
+                  <optgroup label="Surat LAAK">
+                    <option value="surat_permohonan_akreditasi">Surat Permohonan Akreditasi</option>
+                    <option value="berita_acara_visitasi">Berita Acara Visitasi</option>
+                    <option value="laporan_audit_internal">Laporan Audit Internal</option>
+                    <option value="surat_tindak_lanjut_audit">Surat Tindak Lanjut Audit</option>
+                    <option value="laak_default">LAAK Default</option>
+                  </optgroup>
                 </select>
                 {/* Button Unduh Template - muncul ketika nama dan jenis sudah diisi */}
                 {formData.template_name && formData.template_type && !editingTemplate && (

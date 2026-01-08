@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
+import api from '../services/api';
 
 // --- Interface Data ---
 interface FormData {
@@ -15,6 +16,13 @@ interface FormData {
   tanggalSelesai: string;
   biaya: string;
   kendaraan: string;    
+}
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
 }
 
 // KEY UNTUK LOCAL STORAGE (Draft)
@@ -48,6 +56,10 @@ const SuratTugas = () => {
   const [isSystemReady, setIsSystemReady] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   // --- 1. LOGIC LOAD DRAFT ---
   useEffect(() => {
     const savedData = localStorage.getItem(DRAFT_KEY);
@@ -77,6 +89,23 @@ const SuratTugas = () => {
 
     return () => clearTimeout(timer);
   }, [formData, isSystemReady]);
+
+  // Fetch templates kustom untuk surat tugas
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await api.get('/dashboard/templates/by-type/surat_tugas');
+        setTemplates(response.data.templates || []);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   // --- HANDLERS ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -243,10 +272,25 @@ const SuratTugas = () => {
                   value={formData.jenis_surat} 
                   onChange={handleChange} 
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 outline-none bg-[#FDFBF7]/50 cursor-pointer"
+                  disabled={loadingTemplates}
                 >
                   <option value="surat_tugas_dosen">Surat Tugas Dosen</option>
                   <option value="surat_tugas_tendik">Surat Tugas Tendik</option>
+                  
+                  {/* Template Kustom dari Database */}
+                  {templates.length > 0 && (
+                    <>
+                      <optgroup label="Template Kustom">
+                        {templates.map((template) => (
+                          <option key={template.template_id} value={`template_${template.template_id}`}>
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
+                {loadingTemplates && <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#6B5E54] mb-2">

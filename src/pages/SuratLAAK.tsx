@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
+import api from '../services/api';
 
 // --- Interfaces ---
 interface KriteriaRow {
@@ -28,6 +29,13 @@ interface FormData {
   pembuka: string;
   isi: string;
   penutup: string;
+}
+
+interface Template {
+  template_id: number;
+  template_name: string;
+  template_type: string;
+  file_path: string;
 }
 
 const romanMonths = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
@@ -81,6 +89,10 @@ const SuratLAAK = () => {
   const [isSystemReady, setIsSystemReady] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // State untuk template kustom
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   // --- 3. EFFECT: LOAD DRAFT ---
   useEffect(() => {
     const savedData = localStorage.getItem(DRAFT_KEY);
@@ -122,6 +134,46 @@ const SuratLAAK = () => {
 
     return () => clearTimeout(timer);
   }, [formData, kriteriaList, lampiranList, referensiList, isSystemReady]);
+
+  // Fetch templates kustom untuk surat LAAK
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        // Fetch template untuk semua jenis LAAK yang relevan
+        const templateTypes = [
+          'surat_laak',
+          'surat_permohonan_akreditasi',
+          'berita_acara_visitasi',
+          'laporan_audit_internal',
+          'surat_tindak_lanjut_audit',
+          'laak_default',
+        ];
+
+        const responses = await Promise.all(
+          templateTypes.map((type) =>
+            api.get(`/dashboard/templates/by-type/${type}`).catch(() => ({ data: { templates: [] } }))
+          )
+        );
+
+        // Gabungkan semua template
+        const allTemplates = responses.flatMap((response) => response.data.templates || []);
+
+        // Hapus duplikat berdasarkan template_id
+        const uniqueTemplates = allTemplates.filter((template, index, self) =>
+          index === self.findIndex((t) => t.template_id === template.template_id)
+        );
+
+        setTemplates(uniqueTemplates);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
 
   // --- 5. HANDLERS ---
@@ -176,7 +228,18 @@ const SuratLAAK = () => {
       const now = new Date();
       const m = romanMonths[now.getMonth()];
       const y = now.getFullYear();
-      const code = SURAT_CODE_MAP[formData.jenisSurat];
+      
+      // Handle template kustom untuk code
+      let code: string;
+      if (formData.jenisSurat.startsWith('template_')) {
+        // Template kustom - gunakan code default atau dari template
+        const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
+        const customTemplate = templates.find(t => t.template_id === templateId);
+        // Untuk template kustom, gunakan code default atau dari jenis template
+        code = customTemplate?.template_type?.toUpperCase().slice(0, 4) || 'LAAK';
+      } else {
+        code = SURAT_CODE_MAP[formData.jenisSurat] || 'LAAK';
+      }
       
       const nomor = `${urut}/${univ}/${fak}/LAAK/${code}/${m}/${y}`;
       setFormData(prev => ({ ...prev, nomorSurat: nomor }));
@@ -189,14 +252,34 @@ const SuratLAAK = () => {
   // --- 6. API ACTIONS (CONNECT KE BACKEND) ---
 
   const constructPayload = () => {
-    // Format tanggal ke Indo untuk dikirim ke backend (opsional, tergantung backend)
-    // Di sini kita kirim raw string saja, biar backend/template yang format
-    return {
-        ...formData,
-        kriteriaList,
-        lampiranList,
-        referensiList
+    // Handle template kustom
+    let jenisSuratForBackend = formData.jenisSurat;
+    let templateName: string | undefined;
+
+    if (formData.jenisSurat.startsWith('template_')) {
+      // Template kustom - ambil dari templates state
+      const templateId = parseInt(formData.jenisSurat.replace('template_', ''));
+      const customTemplate = templates.find(t => t.template_id === templateId);
+      if (customTemplate) {
+        jenisSuratForBackend = customTemplate.template_type;
+        templateName = customTemplate.file_path;
+      }
+    }
+
+    const payload: any = {
+      ...formData,
+      jenisSurat: jenisSuratForBackend,
+      kriteriaList,
+      lampiranList,
+      referensiList
     };
+
+    // Tambahkan templateName jika template kustom
+    if (templateName) {
+      payload.templateName = templateName;
+    }
+
+    return payload;
   };
 
   const handlePreview = async () => {
@@ -336,13 +419,27 @@ const SuratLAAK = () => {
                   value={formData.jenisSurat}
                   onChange={handleChange}
                   className="w-full border border-[#E5DED5] rounded-xl p-3.5 focus:ring-4 focus:ring-[#B28D35]/10 focus:border-[#B28D35] outline-none bg-[#FDFBF7]/50 transition-all cursor-pointer"
+                  disabled={loadingTemplates}
                 >
                   <option>Surat Permohonan Akreditasi</option>
                   <option>Laporan Audit Internal</option>
                   <option>Surat Tindak Lanjut Audit</option>
                   <option>Berita Acara Visitasi</option>
+                  
+                  {/* Template Kustom dari Database */}
+                  {templates.length > 0 && (
+                    <>
+                      <optgroup label="Template Kustom">
+                        {templates.map((template) => (
+                          <option key={template.template_id} value={`template_${template.template_id}`}>
+                            {template.template_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
-                {/* Note: Tidak ada custom template karena backend hardcoded */}
+                {loadingTemplates && <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>}
               </div>
 
               <div>

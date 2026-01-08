@@ -4,7 +4,7 @@ import api from '../services/api';
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-type DocType = 'SK_DEKAN' | 'SK_PANITIA' | 'SE_AKADEMIK' | 'SE_UMUM';
+type DocType = 'SK_DEKAN' | 'SK_PANITIA' | 'SE_AKADEMIK' | 'SE_UMUM' | string; // string untuk template kustom (template_${id})
 type TabType = 'SK' | 'SE';
 
 interface SectionPoint {
@@ -291,13 +291,35 @@ export default function SuratKeputusanSuratEdaran() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-  // Fetch templates kustom
+  // Fetch templates kustom - fetch untuk semua jenis yang relevan
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
-        const response = await api.get('/dashboard/templates/by-type/surat_keputusan');
-        setTemplates(response.data.templates || []);
+        // Fetch template untuk semua jenis SK dan SE yang relevan
+        const templateTypes = [
+          'surat_keputusan',
+          'sk_dekan',
+          'sk_panitia',
+          'se_akademik',
+          'se_umum',
+        ];
+
+        const responses = await Promise.all(
+          templateTypes.map((type) =>
+            api.get(`/dashboard/templates/by-type/${type}`).catch(() => ({ data: { templates: [] } }))
+          )
+        );
+
+        // Gabungkan semua template
+        const allTemplates = responses.flatMap((response) => response.data.templates || []);
+
+        // Hapus duplikat berdasarkan template_id
+        const uniqueTemplates = allTemplates.filter((template, index, self) =>
+          index === self.findIndex((t) => t.template_id === template.template_id)
+        );
+
+        setTemplates(uniqueTemplates);
       } catch (err) {
         console.error('Error fetching templates:', err);
       } finally {
@@ -410,8 +432,20 @@ export default function SuratKeputusanSuratEdaran() {
 
     const approversFiltered = approvers.filter(a => a.name.trim() !== '' || a.role.trim() !== '');
 
+    // Handle template kustom
+    let templateName: string;
+    if (docType.startsWith('template_')) {
+      // Template kustom - ambil dari templates state
+      const templateId = parseInt(docType.replace('template_', ''));
+      const customTemplate = templates.find(t => t.template_id === templateId);
+      templateName = customTemplate?.file_path || '';
+    } else {
+      // Template default
+      templateName = TEMPLATE_MAP[docType as keyof typeof TEMPLATE_MAP] || '';
+    }
+
     return {
-      templateName: TEMPLATE_MAP[docType],
+      templateName,
       docType,
       data: {
         perihal,
@@ -659,6 +693,7 @@ export default function SuratKeputusanSuratEdaran() {
                     </>
                   )}
                 </select>
+                {loadingTemplates && <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>}
                 {loadingTemplates && (
                   <p className="text-xs text-[#8C7A6B] mt-1">Memuat template...</p>
                 )}
