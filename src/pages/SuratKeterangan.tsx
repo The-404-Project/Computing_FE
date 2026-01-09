@@ -55,9 +55,12 @@ export default function SuratKeterangan() {
   const DRAFT_KEY = 'surat_keterangan_draft_v1';
 
   // State Penanda Draft
-  const [isDraftLoaded, setIsDraftLoaded] = useState(false); // Notifikasi "Draft Dipulihkan"
-  const [isSystemReady, setIsSystemReady] = useState(false); // Penanda siap auto-save
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [isSystemReady, setIsSystemReady] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  
+  // State Loading Format
+  const [loadingFormat, setLoadingFormat] = useState<'pdf' | 'docx' | 'preview' | null>(null)
 
   // --- 1. LOGIC LOAD DRAFT (Saat Halaman Dibuka) ---
   useEffect(() => {
@@ -86,17 +89,13 @@ export default function SuratKeterangan() {
   useEffect(() => {
     if (!isSystemReady) return;
 
-    // 1. Ubah status jadi "Menyimpan..." saat ada perubahan
     setSaveStatus('saving');
 
-    // 2. Gunakan Timer (Debounce) agar tidak spam simpan setiap ketik satu huruf
     const timer = setTimeout(() => {
       const objectToSave = { formData };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(objectToSave));
-
-      // 3. Ubah status jadi "Tersimpan"
       setSaveStatus('saved');
-    }, 1000); // Delay 1 detik setelah user berhenti mengetik
+    }, 1000); 
 
     return () => clearTimeout(timer);
   }, [formData, isSystemReady]);
@@ -128,6 +127,7 @@ export default function SuratKeterangan() {
 
   const handlePreview = async () => {
     try {
+      setLoadingFormat('preview')
       const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
       let currentUserName = ""
       let currentUserRole = ""
@@ -162,6 +162,8 @@ export default function SuratKeterangan() {
       setShowPreviewModal(true)
     } catch (err: any) {
       alert(err?.message ? String(err.message) : 'Gagal membuat preview')
+    } finally {
+      setLoadingFormat(null)
     }
   }
 
@@ -226,25 +228,14 @@ export default function SuratKeterangan() {
     setShowSuccessPopup(true)
   }
 
-  const handleExport = (format: "docx" | "pdf") => {
-    if (format === "docx") {
+  const handleExport = async (format: "docx" | "pdf") => {
+    setLoadingFormat(format)
+    try {
       const formatDateID = (d: Date) => {
-        const months = [
-          "Januari",
-          "Februari",
-          "Maret",
-          "April",
-          "Mei",
-          "Juni",
-          "Juli",
-          "Agustus",
-          "September",
-          "Oktober",
-          "November",
-          "Desember",
-        ]
+        const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
       }
+      
       const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
       let currentUserName = ""
       let currentUserRole = ""
@@ -270,85 +261,60 @@ export default function SuratKeterangan() {
         role: currentUserRole,
         jenis_surat: formData.jenisSurat,
       }
-
-      api.post("/surat-keterangan/generate", payload)
-        .then(async (res) => {
-          const data: any = res.data || {}
-          const fileName = data.file
-          
-          if (fileName) {
-            try {
-              const fileResponse = await api.get(`/surat-keterangan/files/${encodeURIComponent(fileName)}`, {
-                responseType: 'blob'
-              })
-              const url = window.URL.createObjectURL(fileResponse.data)
-              const a = document.createElement("a")
-              a.href = url
-              a.download = fileName
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              window.URL.revokeObjectURL(url)
-            } catch (e) {
-              console.error("Gagal download file", e)
-              throw new Error("Gagal mengunduh file yang telah digenerate")
-            }
-          }
-          
-          setShowSuccessPopup(false)
-        })
-        .catch((err) => {
-          const status = err?.response?.status
-          const data = err?.response?.data || {}
-          const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
-          setExistingFile(data && data.file ? String(data.file) : null)
-          setShowSuccessPopup(false)
-          setErrorMessage(msg)
-          setShowErrorPopup(true)
-        })
-    } else {
-      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
-      const formatDateID = (d: Date) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
-      const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null
-      let currentUserName = ""
-      let currentUserRole = ""
-      if (userRaw) {
-        try {
-          const u = JSON.parse(userRaw)
-          currentUserName = u.fullName || u.username || ""
-          currentUserRole = u.role || ""
-        } catch {}
-      }
-      const payload = {
-        nomor_surat: formData.nomorRegistrasi,
-        nim: formData.nim,
-        jenis_surat: formData.jenisSurat,
-        keperluan: formData.keterangan,
-        kota: "Bandung",
-        tanggal: formatDateID(new Date()),
-        nama_user: currentUserName,
-        role: currentUserRole,
-      }
-      api.post(`/surat-keterangan/create?format=pdf`, payload, {
-        responseType: 'blob'
-      })
-        .then(async (response) => {
-          const blob = response.data
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
+      if (format === "docx") {
+        const res = await api.post("/surat-keterangan/generate", payload)
+        const data: any = res.data || {}
+        const fileName = data.file
+        
+        if (fileName) {
+          // Gunakan api service untuk download file agar base URL & token ter-handle otomatis
+          const fileRes = await api.get(`/surat-keterangan/files/${encodeURIComponent(fileName)}`, {
+            responseType: 'blob'
+          });
+          const url = window.URL.createObjectURL(fileRes.data);
+          const a = document.createElement("a")
           a.href = url
-          a.download = `Surat_Keterangan_${Date.now()}.pdf`
+          a.download = fileName
           document.body.appendChild(a)
           a.click()
-          a.remove()
-          window.URL.revokeObjectURL(url)
-          
-          setShowSuccessPopup(false)
-        })
-        .catch((err: any) => {
-          alert(err?.message ? String(err.message) : 'Gagal export PDF')
-          setShowSuccessPopup(false)
-        })
+          document.body.removeChild(a)
+          window.URL.revokeObjectURL(url);
+        }
+      } else {
+        // PDF Export
+        // Gunakan api.post dengan responseType 'blob'
+        const response = await api.post('/surat-keterangan/create?format=pdf', payload, {
+          responseType: 'blob'
+        });
+        
+        const blob = response.data;
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Surat_Keterangan_${Date.now()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      }
+      
+      // Sukses
+      setShowSuccessPopup(false)
+
+    } catch (err: any) {
+      if (format === "docx") {
+        const status = err?.response?.status
+        const data = err?.response?.data || {}
+        const msg = (data && data.message) ? String(data.message) : (status ? 'Gagal membuat dokumen' : 'Terjadi kesalahan jaringan')
+        setExistingFile(data && data.file ? String(data.file) : null)
+        setErrorMessage(msg)
+        setShowErrorPopup(true)
+      } else {
+        alert(err?.message ? String(err.message) : 'Gagal export PDF')
+      }
+      setShowSuccessPopup(false)
+    } finally {
+      setLoadingFormat(null)
     }
   }
 
@@ -665,15 +631,17 @@ export default function SuratKeterangan() {
             </button>
             <button
               onClick={handlePreview}
-              className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all"
+              disabled={loadingFormat !== null}
+              className="flex items-center gap-2 px-6 py-2 font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
             >
               <Eye className="w-4 h-4" />
-              Preview Dokumen
+              {loadingFormat === 'preview' ? 'Loading...' : 'Preview Dokumen'}
             </button>
             <button
               onClick={handleGenerate}
-              className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-lg hover:opacity-80 transition-all"
+              disabled={loadingFormat !== null}
+              className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: colors.primary.main }}
             >
               <FileText className="w-4 h-4" />
@@ -715,19 +683,21 @@ export default function SuratKeterangan() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => handleExport("docx")}
-                className="flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all"
+                disabled={loadingFormat !== null}
+                className="flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: `${colors.primary.main}20`, color: colors.primary.main }}
               >
                 <FileText className="w-5 h-5" />
-                Export DOCX
+                {loadingFormat === 'docx' ? 'Processing...' : 'Export DOCX'}
               </button>
               <button
                 onClick={() => handleExport("pdf")}
-                className="flex items-center justify-center gap-2 px-6 py-3 text-white font-medium rounded-lg hover:opacity-80 transition-all"
+                disabled={loadingFormat !== null}
+                className="flex items-center justify-center gap-2 px-6 py-3 text-white font-medium rounded-lg hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: colors.primary.main }}
               >
                 <Download className="w-5 h-5" />
-                Export PDF
+                {loadingFormat === 'pdf' ? 'Processing...' : 'Export PDF'}
               </button>
             </div>
           </div>
